@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_URL } from '../config';
 
 const Events = () => {
   const [events, setEvents] = useState([]);
@@ -17,7 +18,7 @@ const Events = () => {
       const params = {};
       if (category) params.category = category;
       if (search) params.search = search;
-      const res = await axios.get('http://localhost:5000/api/events', { params });
+      const res = await axios.get(`${API_URL}/api/events`, { params });
       setEvents(res.data);
     } catch (err) {
       console.error(err);

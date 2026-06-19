@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { API_URL } from '../config';
 
 const Favorites = () => {
   const { user, token } = useAuth();
@@ -19,7 +20,7 @@ const Favorites = () => {
 
   const fetchFavorites = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/favorites/my', {
+      const res = await axios.get(`${API_URL}/api/favorites/my`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setFavorites(res.data);
@@ -31,7 +32,7 @@ const Favorites = () => {
   };
 
   const removeFromFavorites = async (eventId) => {
-    await axios.delete(`http://localhost:5000/api/favorites/${eventId}`,
+    await axios.delete(`${API_URL}/api/favorites/${eventId}`,
       { headers: { Authorization: `Bearer ${token}` } });
     setFavorites(favorites.filter(e => e.id !== eventId));
   };

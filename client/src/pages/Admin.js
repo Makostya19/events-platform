@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { API_URL } from '../config';
 
 const Admin = () => {
   const { user, token } = useAuth();
@@ -22,14 +23,14 @@ const Admin = () => {
   }, [user]);
 
   const fetchEvents = async () => {
-    const res = await axios.get('http://localhost:5000/api/events');
+    const res = await axios.get(`${API_URL}/api/events`);
     setEvents(res.data);
   };
 
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/events', form,
+      await axios.post(`${API_URL}/api/events`, form,
         { headers: { Authorization: `Bearer ${token}` } });
       setMessage('Event created!');
       setForm({ title: '', description: '', category: 'concert', location: '', event_date: '', price: 0, total_seats: 100 });
@@ -41,7 +42,7 @@ const Admin = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this event?')) return;
-    await axios.delete(`http://localhost:5000/api/events/${id}`,
+    await axios.delete(`${API_URL}/api/events/${id}`,
       { headers: { Authorization: `Bearer ${token}` } });
     fetchEvents();
   };

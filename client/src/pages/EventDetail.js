@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { API_URL } from '../config';
 
 const EventDetail = () => {
   const { id } = useParams();
@@ -21,19 +22,19 @@ const EventDetail = () => {
   }, [id]);
 
   const fetchEvent = async () => {
-    const res = await axios.get(`http://localhost:5000/api/events/${id}`);
+    const res = await axios.get(`${API_URL}/api/events/${id}`);
     setEvent(res.data);
   };
 
   const fetchReviews = async () => {
-    const res = await axios.get(`http://localhost:5000/api/reviews/${id}`);
+    const res = await axios.get(`${API_URL}/api/reviews/${id}`);
     setReviews(res.data);
   };
 
   const handleBuyTicket = async () => {
     if (!user) return navigate('/login');
     try {
-      await axios.post('http://localhost:5000/api/tickets', { event_id: id, quantity },
+      await axios.post(`${API_URL}/api/tickets`, { event_id: id, quantity },
         { headers: { Authorization: `Bearer ${token}` } });
       setMessage('Ticket booked successfully!');
       fetchEvent();
@@ -46,9 +47,9 @@ const EventDetail = () => {
     if (!user) return navigate('/login');
     try {
       if (isFavorite) {
-        await axios.delete(`http://localhost:5000/api/favorites/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+        await axios.delete(`${API_URL}/api/favorites/${id}`, { headers: { Authorization: `Bearer ${token}` } });
       } else {
-        await axios.post(`http://localhost:5000/api/favorites/${id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+        await axios.post(`${API_URL}/api/favorites/${id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
       }
       setIsFavorite(!isFavorite);
     } catch (err) {
@@ -60,7 +61,7 @@ const EventDetail = () => {
     e.preventDefault();
     if (!user) return navigate('/login');
     try {
-      await axios.post(`http://localhost:5000/api/reviews/${id}`, { rating, comment },
+      await axios.post(`${API_URL}/api/reviews/${id}`, { rating, comment },
         { headers: { Authorization: `Bearer ${token}` } });
       setComment('');
       fetchReviews();
