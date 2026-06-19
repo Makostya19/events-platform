@@ -3,6 +3,13 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../config';
 
+const categoryStyle = {
+  concert: { emoji: '🎵', color: '#a970ff', label: 'Concert' },
+  conference: { emoji: '💼', color: '#3ba9ff', label: 'Conference' },
+  festival: { emoji: '🎪', color: '#ff5fa2', label: 'Festival' },
+  sports: { emoji: '⚽', color: '#3bd671', label: 'Sports' },
+};
+
 const Events = () => {
   const [events, setEvents] = useState([]);
   const [search, setSearch] = useState('');
@@ -45,7 +52,7 @@ const Events = () => {
             onChange={e => setSearch(e.target.value)}
             style={{ flex: 1, padding: '10px 16px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '1rem' }}
           />
-          <button type="submit" style={{ padding: '10px 24px', background: '#3b5bdb', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>
+          <button type="submit" style={{ padding: '10px 24px', background: '#a970ff', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>
             Search
           </button>
         </form>
@@ -68,34 +75,79 @@ const Events = () => {
         <p style={{ textAlign: 'center', color: '#888' }}>No events found</p>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
-          {events.map(event => (
-            <Link to={`/events/${event.id}`} key={event.id} style={{ textDecoration: 'none' }}>
-              <div style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', transition: 'transform 0.2s', cursor: 'pointer' }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-              >
-                <div style={{ height: '180px', background: 'linear-gradient(135deg, #1a1a2e, #3b5bdb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem' }}>
-                  {event.category === 'concert' ? '🎵' : event.category === 'conference' ? '💼' : event.category === 'festival' ? '🎪' : '⚽'}
-                </div>
-                <div style={{ padding: '20px' }}>
-                  <span style={{ background: '#eef2ff', color: '#3b5bdb', padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '600' }}>
-                    {event.category || 'Event'}
-                  </span>
-                  <h3 style={{ margin: '10px 0 8px', color: '#1a1a2e', fontWeight: '700' }}>{event.title}</h3>
-                  <p style={{ color: '#888', fontSize: '0.9rem', marginBottom: '12px' }}>📍 {event.location}</p>
-                  <p style={{ color: '#888', fontSize: '0.9rem', marginBottom: '16px' }}>
-                    📅 {new Date(event.event_date).toLocaleDateString()}
-                  </p>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: '800', color: '#3b5bdb', fontSize: '1.1rem' }}>
-                      {event.price === '0.00' ? 'Free' : `$${event.price}`}
+          {events.map(event => {
+            const cat = categoryStyle[event.category] || categoryStyle.concert;
+            return (
+              <Link to={`/events/${event.id}`} key={event.id} style={{ textDecoration: 'none' }}>
+                <div
+                  className="event-card"
+                  style={{
+                    background: '#16161a',
+                    borderRadius: '14px',
+                    overflow: 'hidden',
+                    border: '1px solid #2a2a30',
+                    transition: 'transform 0.25s, box-shadow 0.25s, border-color 0.25s',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.transform = 'translateY(-6px)';
+                    e.currentTarget.style.boxShadow = `0 12px 32px ${cat.color}33`;
+                    e.currentTarget.style.borderColor = cat.color;
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.borderColor = '#2a2a30';
+                  }}
+                >
+                  <div style={{
+                    height: '160px',
+                    position: 'relative',
+                    background: `radial-gradient(circle at 30% 30%, ${cat.color}55, #0e0e10 70%)`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '3rem',
+                  }}>
+                    {cat.emoji}
+                    <span style={{
+                      position: 'absolute', top: '12px', left: '12px',
+                      background: cat.color, color: '#0e0e10',
+                      padding: '4px 10px', borderRadius: '20px',
+                      fontSize: '0.7rem', fontWeight: '800', letterSpacing: '0.03em',
+                      textTransform: 'uppercase',
+                    }}>
+                      {cat.label}
                     </span>
-                    <span style={{ color: '#888', fontSize: '0.85rem' }}>{event.available_seats} seats left</span>
+                    {event.price === '0.00' && (
+                      <span style={{
+                        position: 'absolute', top: '12px', right: '12px',
+                        background: '#0e0e10', color: '#3bd671',
+                        padding: '4px 10px', borderRadius: '20px',
+                        fontSize: '0.7rem', fontWeight: '800',
+                        border: '1px solid #3bd671',
+                      }}>
+                        FREE
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ padding: '20px' }}>
+                    <h3 style={{ margin: '0 0 8px', color: '#fff', fontWeight: '700', fontSize: '1.1rem' }}>{event.title}</h3>
+                    <p style={{ color: '#9a9aa5', fontSize: '0.88rem', marginBottom: '6px' }}>📍 {event.location}</p>
+                    <p style={{ color: '#9a9aa5', fontSize: '0.88rem', marginBottom: '16px' }}>
+                      📅 {new Date(event.event_date).toLocaleDateString()}
+                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #2a2a30', paddingTop: '14px' }}>
+                      <span style={{ fontWeight: '800', color: cat.color, fontSize: '1.15rem' }}>
+                        {event.price === '0.00' ? 'Free' : `$${event.price}`}
+                      </span>
+                      <span style={{ color: '#9a9aa5', fontSize: '0.8rem' }}>{event.available_seats} seats left</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
