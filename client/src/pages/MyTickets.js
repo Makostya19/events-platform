@@ -2,24 +2,26 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { API_URL } from '../config';
 
 const MyTickets = () => {
-  const { user, token } = useAuth();
+  const { user, token, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user || !token) {
       navigate('/login');
       return;
     }
     fetchTickets();
-  }, [user, token]);
+  }, [user, token, authLoading]);
 
   const fetchTickets = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/tickets/my', {
+      const res = await axios.get(`${API_URL}/api/tickets/my`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTickets(res.data);
@@ -30,7 +32,7 @@ const MyTickets = () => {
     }
   };
 
-  if (loading) return <p style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Loading...</p>;
+  if (authLoading || loading) return <p style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Loading...</p>;
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 20px' }}>

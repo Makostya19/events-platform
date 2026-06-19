@@ -5,18 +5,19 @@ import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config';
 
 const Favorites = () => {
-  const { user, token } = useAuth();
+  const { user, token, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user || !token) {
       navigate('/login');
       return;
     }
     fetchFavorites();
-  }, [user, token]);
+  }, [user, token, authLoading]);
 
   const fetchFavorites = async () => {
     try {
@@ -37,7 +38,7 @@ const Favorites = () => {
     setFavorites(favorites.filter(e => e.id !== eventId));
   };
 
-  if (loading) return <p style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Loading...</p>;
+  if (authLoading || loading) return <p style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Loading...</p>;
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px' }}>
