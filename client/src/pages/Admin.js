@@ -233,14 +233,26 @@ const EventsTab = ({ token }) => {
         <h2 style={{ fontWeight: '700', marginBottom: '20px', color: '#1a1a2e' }}>{editingId ? 'Edit Event' : 'Create Event'}</h2>
         {message && <div style={{ background: '#f0e6ff', color: '#a970ff', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontWeight: '600' }}>{message}</div>}
         <form onSubmit={handleSubmit}>
-          <input style={inputStyle} placeholder="Title" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
-          <textarea style={{...inputStyle, minHeight: '80px', resize: 'vertical'}} placeholder="Description (min 20 chars)" value={form.description} onChange={e => setForm({...form, description: e.target.value})} required />
-          <select style={inputStyle} value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
-            <option value="concert">Concert</option>
-            <option value="conference">Conference</option>
-            <option value="festival">Festival</option>
-            <option value="sports">Sports</option>
-          </select>
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Title</label>
+            <input style={{...inputStyle, marginBottom: 0}} placeholder="e.g. Jazz Night" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
+          </div>
+
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Description <span style={{ color: '#999', fontWeight: '400' }}>(min 20 characters)</span></label>
+            <textarea style={{...inputStyle, minHeight: '80px', resize: 'vertical', marginBottom: 0}} placeholder="Describe the event..." value={form.description} onChange={e => setForm({...form, description: e.target.value})} required />
+          </div>
+
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Category</label>
+            <select style={{...inputStyle, marginBottom: 0}} value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
+              <option value="concert">Concert</option>
+              <option value="conference">Conference</option>
+              <option value="festival">Festival</option>
+              <option value="sports">Sports</option>
+            </select>
+          </div>
+
           <div style={{ marginBottom: '12px' }}>
             <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Event Image</label>
             <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} style={{ marginBottom: '8px' }} />
@@ -249,10 +261,27 @@ const EventsTab = ({ token }) => {
               <img src={form.image_url} alt="preview" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', marginTop: '8px' }} />
             )}
           </div>
-          <input style={inputStyle} placeholder="Location" value={form.location} onChange={e => setForm({...form, location: e.target.value})} required />
-          <input style={inputStyle} type="datetime-local" value={form.event_date} onChange={e => setForm({...form, event_date: e.target.value})} required />
-          <input style={inputStyle} type="number" placeholder="Price" value={form.price} onChange={e => setForm({...form, price: e.target.value})} min="0" />
-          <input style={inputStyle} type="number" placeholder="Total Seats" value={form.total_seats} onChange={e => setForm({...form, total_seats: e.target.value})} min="1" />
+
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Location</label>
+            <input style={{...inputStyle, marginBottom: 0}} placeholder="e.g. Blue Square, Itaewon" value={form.location} onChange={e => setForm({...form, location: e.target.value})} required />
+          </div>
+
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Date & Time</label>
+            <input style={{...inputStyle, marginBottom: 0}} type="datetime-local" value={form.event_date} onChange={e => setForm({...form, event_date: e.target.value})} required />
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Price ($)</label>
+              <input style={{...inputStyle, marginBottom: 0}} type="number" placeholder="0 = free" value={form.price} onChange={e => setForm({...form, price: e.target.value})} min="0" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Total Seats</label>
+              <input style={{...inputStyle, marginBottom: 0}} type="number" placeholder="e.g. 100" value={form.total_seats} onChange={e => setForm({...form, total_seats: e.target.value})} min="1" />
+            </div>
+          </div>
           {editingId && (
             <select style={inputStyle} value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
               <option value="draft">Draft</option>

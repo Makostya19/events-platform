@@ -135,7 +135,7 @@ router.post('/', authMiddleware, async (req, res) => {
 
     const result = await pool.query(
       `INSERT INTO events (title, description, category, location, event_date, price, total_seats, available_seats, image_url, status, created_by, start_datetime, end_datetime)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$7,$8,$9,$10,$5,$5 + INTERVAL '3 hours') RETURNING *`,
+       VALUES ($1,$2,$3,$4,$5::timestamp,$6,$7,$7,$8,$9,$10,$5::timestamp,$5::timestamp + INTERVAL '3 hours') RETURNING *`,
       [title, description, category, location, event_date, price, total_seats, image_url, status || 'published', req.user.id]
     );
     res.json(result.rows[0]);
@@ -151,7 +151,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
     const { title, description, category, location, event_date, price, total_seats, image_url } = req.body;
 
     const result = await pool.query(
-      `UPDATE events SET title=$1, description=$2, category=$3, location=$4, event_date=$5, price=$6, total_seats=$7, image_url=$8
+      `UPDATE events SET title=$1, description=$2, category=$3, location=$4, event_date=$5::timestamp, price=$6, total_seats=$7, image_url=$8
        WHERE id=$9 RETURNING *`,
       [title, description, category, location, event_date, price, total_seats, image_url, req.params.id]
     );
