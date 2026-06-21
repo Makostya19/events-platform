@@ -120,9 +120,10 @@ const EventsTab = ({ token }) => {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({
     title: '', description: '', category: 'concert',
-    location: '', event_date: '', price: 0, total_seats: 100, status: 'published'
+    location: '', event_date: '', price: 0, total_seats: 100, status: 'published', image_url: ''
   });
   const [message, setMessage] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchEvents();
@@ -140,8 +141,26 @@ const EventsTab = ({ token }) => {
     }
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await axios.post(`${API_URL}/api/upload`, formData, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+      });
+      setForm(f => ({ ...f, image_url: res.data.url }));
+    } catch (err) {
+      setMessage(err.response?.data?.error || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const resetForm = () => {
-    setForm({ title: '', description: '', category: 'concert', location: '', event_date: '', price: 0, total_seats: 100, status: 'published' });
+    setForm({ title: '', description: '', category: 'concert', location: '', event_date: '', price: 0, total_seats: 100, status: 'published', image_url: '' });
     setEditingId(null);
   };
 
@@ -175,6 +194,7 @@ const EventsTab = ({ token }) => {
       price: event.price,
       total_seats: event.total_seats,
       status: event.status,
+      image_url: event.image_url || '',
     });
   };
 
@@ -221,6 +241,14 @@ const EventsTab = ({ token }) => {
             <option value="festival">Festival</option>
             <option value="sports">Sports</option>
           </select>
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Event Image</label>
+            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} style={{ marginBottom: '8px' }} />
+            {uploading && <p style={{ color: '#a970ff', fontSize: '0.85rem' }}>Uploading...</p>}
+            {form.image_url && (
+              <img src={form.image_url} alt="preview" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', marginTop: '8px' }} />
+            )}
+          </div>
           <input style={inputStyle} placeholder="Location" value={form.location} onChange={e => setForm({...form, location: e.target.value})} required />
           <input style={inputStyle} type="datetime-local" value={form.event_date} onChange={e => setForm({...form, event_date: e.target.value})} required />
           <input style={inputStyle} type="number" placeholder="Price" value={form.price} onChange={e => setForm({...form, price: e.target.value})} min="0" />
