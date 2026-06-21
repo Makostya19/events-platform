@@ -144,13 +144,13 @@ const Events = () => {
                     <div style={{
                       height: '160px',
                       position: 'relative',
-                      background: `radial-gradient(circle at 30% 30%, ${cat.color}55, #0e0e10 70%)`,
+                      background: event.image_url ? `url(${event.image_url}) center/cover` : `radial-gradient(circle at 30% 30%, ${cat.color}55, #0e0e10 70%)`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: '3rem',
                     }}>
-                      {cat.emoji}
+                      {!event.image_url && cat.emoji}
                       <span style={{
                         position: 'absolute', top: '12px', left: '12px',
                         background: cat.color, color: '#0e0e10',

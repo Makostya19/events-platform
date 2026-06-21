@@ -86,11 +86,11 @@ const EventDetail = () => {
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px' }}>
       <div style={{
         borderRadius: '16px', height: '280px', position: 'relative',
-        background: `radial-gradient(circle at 30% 30%, ${cat.color}55, #0e0e10 70%)`,
+        background: event.image_url ? `url(${event.image_url}) center/cover` : `radial-gradient(circle at 30% 30%, ${cat.color}55, #0e0e10 70%)`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: '5rem', marginBottom: '32px', border: `1px solid ${cat.color}55`,
       }}>
-        {cat.emoji}
+        {!event.image_url && cat.emoji}
         <span style={{
           position: 'absolute', top: '16px', left: '16px',
           background: cat.color, color: '#0e0e10',
