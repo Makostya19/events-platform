@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const passport = require('passport');
 const pool = require('../db');
 
 router.post('/register', async (req, res) => {
@@ -38,6 +39,10 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ error: 'Your account has been blocked. Contact support.' });
     }
 
+    if (!user.password_hash) {
+      return res.status(400).json({ error: 'This account uses Google login. Please sign in with Google.' });
+    }
+
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(401).json({ error: 'Invalid email or password' });
 
@@ -47,5 +52,26 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Start Google OAuth flow
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'], session: false }));
+
+// Google OAuth callback
+router.get('/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: `${process.env.CLIENT_URL}/login?error=google_failed` }),
+  (req, res) => {
+    const user = req.user;
+
+    if (user.status === 'blocked') {
+      return res.redirect(`${process.env.CLIENT_URL}/login?error=blocked`);
+    }
+
+    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET);
+    const userData = encodeURIComponent(JSON.stringify({
+      id: user.id, name: user.name, email: user.email, role: user.role, status: user.status
+    }));
+    res.redirect(`${process.env.CLIENT_URL}/oauth-callback?token=${token}&user=${userData}`);
+  }
+);
 
 module.exports = router;
