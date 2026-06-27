@@ -12,16 +12,27 @@ passport.use(new GoogleStrategy({
     const name = profile.displayName;
     const googleId = profile.id;
 
-    let result = await pool.query('SELECT * FROM users WHERE provider = $1 AND provider_id = $2', ['google', googleId]);
+    // Check if user exists by provider_id (returning Google user)
+    let result = await pool.query(
+      'SELECT * FROM users WHERE provider = $1 AND provider_id = $2',
+      ['google', googleId]
+    );
     if (result.rows.length) {
       return done(null, result.rows[0]);
     }
 
+    // Check if user exists by email
     result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     if (result.rows.length) {
-      return done(null, false, { message: 'An account with this email already exists. Please log in with email and password.' });
+      // Link Google to existing account
+      await pool.query(
+        'UPDATE users SET provider = $1, provider_id = $2 WHERE email = $3',
+        ['google', googleId, email]
+      );
+      return done(null, result.rows[0]);
     }
 
+    // Create new user
     const insertResult = await pool.query(
       'INSERT INTO users (name, email, role, provider, provider_id) VALUES ($1,$2,$3,$4,$5) RETURNING *',
       [name, email, 'user', 'google', googleId]
