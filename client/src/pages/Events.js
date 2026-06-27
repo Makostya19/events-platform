@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config';
 
 const categoryStyle = {
@@ -11,7 +12,10 @@ const categoryStyle = {
 };
 
 const Events = () => {
+  const { user, token } = useAuth();
+  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
+  const [favorites, setFavorites] = useState(new Set());
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [sort, setSort] = useState('newest');
@@ -23,6 +27,7 @@ const Events = () => {
 
   useEffect(() => {
     fetchEvents();
+    if (user && token) fetchFavorites();
   }, [category, sort, page]);
 
   const fetchEvents = async () => {
@@ -40,6 +45,39 @@ const Events = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchFavorites = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/favorites/my`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const ids = new Set((res.data || []).map(e => e.id));
+      setFavorites(ids);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const toggleFavorite = async (e, eventId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) return navigate('/login');
+    try {
+      if (favorites.has(eventId)) {
+        await axios.delete(`${API_URL}/api/favorites/${eventId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setFavorites(prev => { const s = new Set(prev); s.delete(eventId); return s; });
+      } else {
+        await axios.post(`${API_URL}/api/favorites/${eventId}`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setFavorites(prev => new Set(prev).add(eventId));
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -119,6 +157,7 @@ const Events = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
             {events.map(event => {
               const cat = categoryStyle[event.category] || categoryStyle.concert;
+              const isFav = favorites.has(event.id);
               return (
                 <Link to={`/events/${event.id}`} key={event.id} style={{ textDecoration: 'none' }}>
                   <div
@@ -129,6 +168,7 @@ const Events = () => {
                       border: '1px solid #2a2a30',
                       transition: 'transform 0.25s, box-shadow 0.25s, border-color 0.25s',
                       cursor: 'pointer',
+                      position: 'relative',
                     }}
                     onMouseEnter={e => {
                       e.currentTarget.style.transform = 'translateY(-6px)';
@@ -170,6 +210,21 @@ const Events = () => {
                         }}>
                           FREE
                         </span>
+                      )}
+                      {user && (
+                        <button
+                          onClick={e => toggleFavorite(e, event.id)}
+                          style={{
+                            position: 'absolute', bottom: '10px', right: '10px',
+                            background: isFav ? `${cat.color}33` : 'rgba(0,0,0,0.5)',
+                            border: `1.5px solid ${isFav ? cat.color : 'rgba(255,255,255,0.3)'}`,
+                            borderRadius: '50%', width: '34px', height: '34px',
+                            cursor: 'pointer', fontSize: '1rem',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}
+                        >
+                          {isFav ? '❤️' : '🤍'}
+                        </button>
                       )}
                     </div>
                     <div style={{ padding: '20px' }}>
