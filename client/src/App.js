@@ -10,6 +10,7 @@ import Favorites from './pages/Favorites';
 import MyTickets from './pages/MyTickets';
 import Admin from './pages/Admin';
 import OAuthCallback from './pages/OAuthCallback';
+import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="/my-tickets" element={<MyTickets />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/oauth-callback" element={<OAuthCallback />} />
+          <Route path="/profile" element={<Profile />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

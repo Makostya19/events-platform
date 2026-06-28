@@ -18,6 +18,7 @@ const Navbar = () => {
         <Link to="/events">Events</Link>
         {user && <Link to="/favorites">Favorites</Link>}
         {user && <Link to="/my-tickets">My Tickets</Link>}
+        {user && <Link to="/profile">Profile</Link>}
         {user?.role === 'admin' && <Link to="/admin" className="admin-link">Admin</Link>}
         {user ? (
           <button onClick={handleLogout} className="btn-logout">Logout</button>

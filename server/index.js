@@ -18,6 +18,7 @@ app.use('/api/favorites', require('./routes/favorites'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/admin/users', require('./routes/users'));
 app.use('/api/upload', require('./routes/upload'));
+app.use('/api/profile', require('./routes/profile'));
 
 app.get('/', (req, res) => res.send('Events Platform API'));
 
