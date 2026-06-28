@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config';
+import './Events.css';
 
 const categoryStyle = {
   concert: { emoji: '🎵', color: '#a970ff', label: 'Concert' },
@@ -91,7 +92,7 @@ const Events = () => {
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px' }}>
       <h1 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '24px', color: '#1a1a2e' }}>All Events</h1>
 
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+      <div className="events-filters">
         <form onSubmit={handleSearch} style={{ display: 'flex', gap: '12px', flex: 1, minWidth: '240px' }}>
           <input
             type="text"
@@ -128,7 +129,7 @@ const Events = () => {
         </select>
       </div>
 
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
+      <div className="events-price-filters">
         <input
           type="number"
           placeholder="Min price"
@@ -154,7 +155,7 @@ const Events = () => {
         <p style={{ textAlign: 'center', color: '#888' }}>No events found</p>
       ) : (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+          <div className="events-grid">
             {events.map(event => {
               const cat = categoryStyle[event.category] || categoryStyle.concert;
               const isFav = favorites.has(event.id);
@@ -252,7 +253,7 @@ const Events = () => {
           </div>
 
           {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '36px' }}>
+            <div className="events-pagination">
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}

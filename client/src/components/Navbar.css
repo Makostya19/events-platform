@@ -9,6 +9,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  flex-wrap: wrap;
 }
 
 .navbar-brand {
@@ -21,7 +22,8 @@
 .navbar-links {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
 .navbar-links a {
@@ -60,4 +62,21 @@
   padding: 8px 20px;
   border-radius: 6px;
   font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 12px 20px;
+    height: auto;
+    gap: 12px;
+  }
+
+  .navbar-links {
+    gap: 12px;
+    font-size: 0.9rem;
+  }
+
+  .navbar-brand {
+    font-size: 1.1rem;
+  }
 }
