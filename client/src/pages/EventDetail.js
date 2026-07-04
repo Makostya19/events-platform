@@ -22,6 +22,9 @@ const EventDetail = () => {
   const [comment, setComment] = useState('');
   const [isFavorite, setIsFavorite] = useState(false);
   const [message, setMessage] = useState('');
+  const [editingReview, setEditingReview] = useState(null);
+  const [editRating, setEditRating] = useState(5);
+  const [editComment, setEditComment] = useState('');
 
   useEffect(() => {
     fetchEvent();
@@ -73,7 +76,39 @@ const EventDetail = () => {
       setComment('');
       fetchReviews();
     } catch (err) {
-      console.error(err);
+      setMessage(err.response?.data?.error || 'Error submitting review');
+    }
+  };
+
+  const handleEditReview = (review) => {
+    setEditingReview(review.id);
+    setEditRating(review.rating);
+    setEditComment(review.comment);
+  };
+
+  const handleUpdateReview = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.put(`${API_URL}/api/reviews/${editingReview}`,
+        { rating: editRating, comment: editComment },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setEditingReview(null);
+      fetchReviews();
+    } catch (err) {
+      setMessage(err.response?.data?.error || 'Error updating review');
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm('Delete your review?')) return;
+    try {
+      await axios.delete(`${API_URL}/api/reviews/${reviewId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      fetchReviews();
+    } catch (err) {
+      setMessage(err.response?.data?.error || 'Error deleting review');
     }
   };
 
@@ -81,6 +116,7 @@ const EventDetail = () => {
 
   const cat = categoryStyle[event.category] || categoryStyle.concert;
   const avgRating = reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
+  const userReview = reviews.find(r => r.user_id === user?.id);
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px' }}>
@@ -102,7 +138,7 @@ const EventDetail = () => {
         </span>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           {avgRating && (
             <p style={{ color: '#f5a623', fontWeight: '700', marginBottom: '6px' }}>
@@ -155,7 +191,8 @@ const EventDetail = () => {
 
       <div style={{ marginBottom: '32px' }}>
         <h2 style={{ fontSize: '1.4rem', fontWeight: '700', marginBottom: '20px', color: '#1a1a2e' }}>Reviews ({reviews.length})</h2>
-        {user && (
+
+        {user && !userReview && (
           <form onSubmit={handleReview} style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', marginBottom: '20px' }}>
             <div style={{ marginBottom: '12px' }}>
               <label style={{ fontWeight: '600', color: '#333' }}>Rating: </label>
@@ -171,13 +208,50 @@ const EventDetail = () => {
             </button>
           </form>
         )}
+
         {reviews.map(r => (
           <div key={r.id} style={{ background: 'white', borderRadius: '12px', padding: '16px 20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', marginBottom: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontWeight: '700', color: '#1a1a2e' }}>{r.name}</span>
-              <span>{'⭐'.repeat(r.rating)}</span>
-            </div>
-            <p style={{ color: '#555', margin: 0 }}>{r.comment}</p>
+            {editingReview === r.id ? (
+              <form onSubmit={handleUpdateReview}>
+                <div style={{ marginBottom: '10px' }}>
+                  <label style={{ fontWeight: '600', color: '#333' }}>Rating: </label>
+                  <select value={editRating} onChange={e => setEditRating(e.target.value)} style={{ marginLeft: '8px', padding: '6px', borderRadius: '6px', border: '1.5px solid #ddd' }}>
+                    {[5,4,3,2,1].map(n => <option key={n} value={n}>{n} ⭐</option>)}
+                  </select>
+                </div>
+                <textarea value={editComment} onChange={e => setEditComment(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '1rem', minHeight: '80px', boxSizing: 'border-box', resize: 'vertical', marginBottom: '10px' }}
+                />
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button type="submit" style={{ background: cat.color, color: '#0e0e10', border: 'none', padding: '8px 20px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>
+                    Save
+                  </button>
+                  <button type="button" onClick={() => setEditingReview(null)} style={{ background: '#eee', border: 'none', padding: '8px 20px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                  <span style={{ fontWeight: '700', color: '#1a1a2e' }}>{r.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span>{'⭐'.repeat(r.rating)}</span>
+                    {user && r.user_id === user.id && (
+                      <>
+                        <button onClick={() => handleEditReview(r)} style={{ background: '#eef2ff', color: '#3b5bdb', border: 'none', borderRadius: '6px', padding: '4px 12px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem' }}>
+                          Edit
+                        </button>
+                        <button onClick={() => handleDeleteReview(r.id)} style={{ background: '#fff0f0', color: '#e03131', border: 'none', borderRadius: '6px', padding: '4px 12px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem' }}>
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <p style={{ color: '#555', margin: 0 }}>{r.comment}</p>
+              </>
+            )}
           </div>
         ))}
       </div>
