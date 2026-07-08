@@ -8,6 +8,12 @@ router.post('/', authMiddleware, async (req, res) => {
 
     if (!quantity || quantity < 1) return res.status(400).json({ error: 'Quantity must be greater than 0' });
 
+    // Check if user is blocked
+    const userCheck = await pool.query('SELECT status FROM users WHERE id = $1', [req.user.id]);
+    if (userCheck.rows[0]?.status === 'blocked') {
+      return res.status(403).json({ error: 'Your account has been blocked. Contact support.' });
+    }
+
     const event = await pool.query('SELECT * FROM events WHERE id = $1', [event_id]);
     if (!event.rows.length) return res.status(404).json({ error: 'Event not found' });
     if (event.rows[0].status !== 'published') return res.status(400).json({ error: 'Event is not available for booking' });

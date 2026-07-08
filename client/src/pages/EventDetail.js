@@ -25,6 +25,9 @@ const EventDetail = () => {
   const [editingReview, setEditingReview] = useState(null);
   const [editRating, setEditRating] = useState(5);
   const [editComment, setEditComment] = useState('');
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
 
   useEffect(() => {
     fetchEvent();
@@ -43,6 +46,7 @@ const EventDetail = () => {
 
   const handleBuyTicket = async () => {
     if (!user) return navigate('/login');
+    setBookingLoading(true);
     try {
       await axios.post(`${API_URL}/api/tickets`, { event_id: id, quantity },
         { headers: { Authorization: `Bearer ${token}` } });
@@ -50,11 +54,14 @@ const EventDetail = () => {
       fetchEvent();
     } catch (err) {
       setMessage(err.response?.data?.error || 'Error booking ticket');
+    } finally {
+      setBookingLoading(false);
     }
   };
 
   const handleFavorite = async () => {
     if (!user) return navigate('/login');
+    setFavoriteLoading(true);
     try {
       if (isFavorite) {
         await axios.delete(`${API_URL}/api/favorites/${id}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -64,12 +71,15 @@ const EventDetail = () => {
       setIsFavorite(!isFavorite);
     } catch (err) {
       console.error(err);
+    } finally {
+      setFavoriteLoading(false);
     }
   };
 
   const handleReview = async (e) => {
     e.preventDefault();
     if (!user) return navigate('/login');
+    setReviewLoading(true);
     try {
       await axios.post(`${API_URL}/api/reviews/${id}`, { rating, comment },
         { headers: { Authorization: `Bearer ${token}` } });
@@ -77,6 +87,8 @@ const EventDetail = () => {
       fetchReviews();
     } catch (err) {
       setMessage(err.response?.data?.error || 'Error submitting review');
+    } finally {
+      setReviewLoading(false);
     }
   };
 
@@ -88,6 +100,7 @@ const EventDetail = () => {
 
   const handleUpdateReview = async (e) => {
     e.preventDefault();
+    setReviewLoading(true);
     try {
       await axios.put(`${API_URL}/api/reviews/${editingReview}`,
         { rating: editRating, comment: editComment },
@@ -97,6 +110,8 @@ const EventDetail = () => {
       fetchReviews();
     } catch (err) {
       setMessage(err.response?.data?.error || 'Error updating review');
+    } finally {
+      setReviewLoading(false);
     }
   };
 
@@ -150,11 +165,13 @@ const EventDetail = () => {
         </div>
         <button
           onClick={handleFavorite}
+          disabled={favoriteLoading}
           style={{
             background: isFavorite ? `${cat.color}22` : 'white',
             border: `2px solid ${cat.color}`, borderRadius: '10px',
-            padding: '12px 18px', cursor: 'pointer', fontSize: '1.3rem',
-            transition: 'transform 0.15s',
+            padding: '12px 18px', cursor: favoriteLoading ? 'not-allowed' : 'pointer',
+            fontSize: '1.3rem', transition: 'transform 0.15s',
+            opacity: favoriteLoading ? 0.7 : 1,
           }}
           onMouseDown={e => e.currentTarget.style.transform = 'scale(0.92)'}
           onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
@@ -180,10 +197,20 @@ const EventDetail = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <input type="number" min="1" max={event.available_seats} value={quantity}
               onChange={e => setQuantity(e.target.value)}
+              disabled={bookingLoading}
               style={{ width: '70px', padding: '10px', borderRadius: '8px', border: '1.5px solid #3a3a42', background: '#0e0e10', color: 'white', fontSize: '1rem', textAlign: 'center' }}
             />
-            <button onClick={handleBuyTicket} style={{ background: cat.color, color: '#0e0e10', border: 'none', padding: '13px 28px', borderRadius: '8px', fontWeight: '800', fontSize: '1rem', cursor: 'pointer' }}>
-              Book Ticket
+            <button
+              onClick={handleBuyTicket}
+              disabled={bookingLoading}
+              style={{
+                background: cat.color, color: '#0e0e10', border: 'none',
+                padding: '13px 28px', borderRadius: '8px', fontWeight: '800',
+                fontSize: '1rem', cursor: bookingLoading ? 'not-allowed' : 'pointer',
+                opacity: bookingLoading ? 0.7 : 1,
+              }}
+            >
+              {bookingLoading ? 'Booking...' : 'Book Ticket'}
             </button>
           </div>
         </div>
@@ -203,8 +230,17 @@ const EventDetail = () => {
             <textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="Write your review..."
               style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '1rem', minHeight: '80px', boxSizing: 'border-box', resize: 'vertical' }}
             />
-            <button type="submit" style={{ marginTop: '12px', background: cat.color, color: '#0e0e10', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer' }}>
-              Submit Review
+            <button
+              type="submit"
+              disabled={reviewLoading}
+              style={{
+                marginTop: '12px', background: cat.color, color: '#0e0e10',
+                border: 'none', padding: '10px 24px', borderRadius: '8px',
+                fontWeight: '800', cursor: reviewLoading ? 'not-allowed' : 'pointer',
+                opacity: reviewLoading ? 0.7 : 1,
+              }}
+            >
+              {reviewLoading ? 'Submitting...' : 'Submit Review'}
             </button>
           </form>
         )}
@@ -223,8 +259,17 @@ const EventDetail = () => {
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '1rem', minHeight: '80px', boxSizing: 'border-box', resize: 'vertical', marginBottom: '10px' }}
                 />
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button type="submit" style={{ background: cat.color, color: '#0e0e10', border: 'none', padding: '8px 20px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>
-                    Save
+                  <button
+                    type="submit"
+                    disabled={reviewLoading}
+                    style={{
+                      background: cat.color, color: '#0e0e10', border: 'none',
+                      padding: '8px 20px', borderRadius: '8px', fontWeight: '700',
+                      cursor: reviewLoading ? 'not-allowed' : 'pointer',
+                      opacity: reviewLoading ? 0.7 : 1,
+                    }}
+                  >
+                    {reviewLoading ? 'Saving...' : 'Save'}
                   </button>
                   <button type="button" onClick={() => setEditingReview(null)} style={{ background: '#eee', border: 'none', padding: '8px 20px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>
                     Cancel

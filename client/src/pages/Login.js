@@ -7,6 +7,7 @@ import { API_URL } from '../config';
 const Login = () => {
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -19,12 +20,16 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
     try {
       const res = await axios.post(`${API_URL}/api/auth/login`, form);
       login(res.data.token, res.data.user);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -66,6 +71,7 @@ const Login = () => {
               type="email"
               value={form.email}
               onChange={e => setForm({ ...form, email: e.target.value })}
+              disabled={loading}
               style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '1rem', boxSizing: 'border-box' }}
               required
             />
@@ -76,12 +82,17 @@ const Login = () => {
               type="password"
               value={form.password}
               onChange={e => setForm({ ...form, password: e.target.value })}
+              disabled={loading}
               style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '1rem', boxSizing: 'border-box' }}
               required
             />
           </div>
-          <button type="submit" style={{ width: '100%', padding: '12px', background: '#a970ff', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '700', cursor: 'pointer' }}>
-            Login
+          <button
+            type="submit"
+            disabled={loading}
+            style={{ width: '100%', padding: '12px', background: '#a970ff', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
         <p style={{ textAlign: 'center', marginTop: '20px', color: '#666' }}>

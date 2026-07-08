@@ -7,17 +7,24 @@ import { API_URL } from '../config';
 const Register = () => {
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (form.name.length < 2) return setError('Name must be at least 2 characters');
+    if (form.password.length < 8) return setError('Password must be at least 8 characters');
+    setLoading(true);
+    setError('');
     try {
       const res = await axios.post(`${API_URL}/api/auth/register`, form);
       login(res.data.token, res.data.user);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -59,6 +66,7 @@ const Register = () => {
               type="text"
               value={form.name}
               onChange={e => setForm({ ...form, name: e.target.value })}
+              disabled={loading}
               style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '1rem', boxSizing: 'border-box' }}
               required
             />
@@ -69,22 +77,28 @@ const Register = () => {
               type="email"
               value={form.email}
               onChange={e => setForm({ ...form, email: e.target.value })}
+              disabled={loading}
               style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '1rem', boxSizing: 'border-box' }}
               required
             />
           </div>
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333' }}>Password</label>
+            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333' }}>Password <span style={{ color: '#999', fontWeight: '400', fontSize: '0.85rem' }}>(min 8 characters)</span></label>
             <input
               type="password"
               value={form.password}
               onChange={e => setForm({ ...form, password: e.target.value })}
+              disabled={loading}
               style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '1rem', boxSizing: 'border-box' }}
               required
             />
           </div>
-          <button type="submit" style={{ width: '100%', padding: '12px', background: '#a970ff', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '700', cursor: 'pointer' }}>
-            Register
+          <button
+            type="submit"
+            disabled={loading}
+            style={{ width: '100%', padding: '12px', background: '#a970ff', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? 'Creating account...' : 'Register'}
           </button>
         </form>
         <p style={{ textAlign: 'center', marginTop: '20px', color: '#666' }}>
