@@ -2,6 +2,50 @@ const router = require('express').Router();
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 
+/**
+ * @swagger
+ * tags:
+ *   name: Reviews
+ *   description: Event reviews
+ */
+
+/**
+ * @swagger
+ * /api/reviews/{event_id}:
+ *   post:
+ *     summary: Create a review (must have confirmed booking)
+ *     tags: [Reviews]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: event_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [rating, comment]
+ *             properties:
+ *               rating:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *               comment:
+ *                 type: string
+ *                 minLength: 5
+ *     responses:
+ *       200:
+ *         description: Review created
+ *       403:
+ *         description: No confirmed booking for this event
+ *       409:
+ *         description: Already reviewed
+ */
 router.post('/:event_id', authMiddleware, async (req, res) => {
   try {
     const { rating, comment } = req.body;
@@ -35,6 +79,26 @@ router.post('/:event_id', authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/reviews/{id}:
+ *   put:
+ *     summary: Update own review
+ *     tags: [Reviews]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Review updated
+ *       403:
+ *         description: Not your review
+ */
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const { rating, comment } = req.body;
@@ -54,6 +118,26 @@ router.put('/:id', authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/reviews/{id}:
+ *   delete:
+ *     summary: Delete a review (own or admin)
+ *     tags: [Reviews]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Review deleted
+ *       403:
+ *         description: Not your review
+ */
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const review = await pool.query('SELECT * FROM reviews WHERE id = $1', [req.params.id]);
@@ -68,6 +152,22 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/reviews/{event_id}:
+ *   get:
+ *     summary: Get all reviews for an event
+ *     tags: [Reviews]
+ *     parameters:
+ *       - in: path
+ *         name: event_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: List of reviews
+ */
 router.get('/:event_id', async (req, res) => {
   try {
     const result = await pool.query(

@@ -2,13 +2,48 @@ const router = require('express').Router();
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 
+/**
+ * @swagger
+ * tags:
+ *   name: Tickets
+ *   description: Ticket booking management
+ */
+
+/**
+ * @swagger
+ * /api/tickets:
+ *   post:
+ *     summary: Book a ticket for an event
+ *     tags: [Tickets]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [event_id, quantity]
+ *             properties:
+ *               event_id:
+ *                 type: integer
+ *               quantity:
+ *                 type: integer
+ *                 minimum: 1
+ *     responses:
+ *       200:
+ *         description: Ticket booked successfully
+ *       400:
+ *         description: Not enough seats or event not available
+ *       403:
+ *         description: Account blocked
+ */
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const { event_id, quantity } = req.body;
 
     if (!quantity || quantity < 1) return res.status(400).json({ error: 'Quantity must be greater than 0' });
 
-    // Check if user is blocked
     const userCheck = await pool.query('SELECT status FROM users WHERE id = $1', [req.user.id]);
     if (userCheck.rows[0]?.status === 'blocked') {
       return res.status(403).json({ error: 'Your account has been blocked. Contact support.' });
@@ -31,6 +66,28 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/tickets/my:
+ *   get:
+ *     summary: Get current user's tickets
+ *     tags: [Tickets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [confirmed, cancelled]
+ *     responses:
+ *       200:
+ *         description: List of user tickets with pagination
+ */
 router.get('/my', authMiddleware, async (req, res) => {
   try {
     const { page = 1, limit = 20, status } = req.query;
@@ -66,6 +123,28 @@ router.get('/my', authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/tickets/{id}/cancel:
+ *   patch:
+ *     summary: Cancel a booking
+ *     tags: [Tickets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Booking cancelled
+ *       403:
+ *         description: Not your booking
+ *       409:
+ *         description: Already cancelled
+ */
 router.patch('/:id/cancel', authMiddleware, async (req, res) => {
   try {
     const ticket = await pool.query('SELECT * FROM tickets WHERE id = $1', [req.params.id]);
@@ -86,6 +165,30 @@ router.patch('/:id/cancel', authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/tickets/admin/all:
+ *   get:
+ *     summary: Get all bookings (Admin only)
+ *     tags: [Tickets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [confirmed, cancelled]
+ *     responses:
+ *       200:
+ *         description: List of all bookings
+ *       403:
+ *         description: Admins only
+ */
 router.get('/admin/all', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admins only' });

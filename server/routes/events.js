@@ -2,7 +2,56 @@ const router = require('express').Router();
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 
-// GET all events with pagination, search, filters, sorting
+/**
+ * @swagger
+ * tags:
+ *   name: Events
+ *   description: Event management
+ */
+
+/**
+ * @swagger
+ * /api/events:
+ *   get:
+ *     summary: Get all events with pagination, search, filters and sorting
+ *     tags: [Events]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 12
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: [concert, conference, festival, sports]
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum: [newest, date_asc, price_asc, price_desc, rating_desc]
+ *       - in: query
+ *         name: minPrice
+ *         schema:
+ *           type: number
+ *       - in: query
+ *         name: maxPrice
+ *         schema:
+ *           type: number
+ *     responses:
+ *       200:
+ *         description: List of events with pagination
+ */
 router.get('/', async (req, res) => {
   try {
     const {
@@ -17,7 +66,6 @@ router.get('/', async (req, res) => {
     const params = [];
     const conditions = [];
 
-    // Guests/users only see published; admins can pass status filter
     if (req.headers.authorization) {
       try {
         const jwt = require('jsonwebtoken');
@@ -101,7 +149,24 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET single event with avg rating
+/**
+ * @swagger
+ * /api/events/{id}:
+ *   get:
+ *     summary: Get a single event by ID
+ *     tags: [Events]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Event details with average rating
+ *       404:
+ *         description: Event not found
+ */
 router.get('/:id', async (req, res) => {
   try {
     const result = await pool.query(`
@@ -120,7 +185,49 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// CREATE event (admin only) - defaults to draft
+/**
+ * @swagger
+ * /api/events:
+ *   post:
+ *     summary: Create a new event (Admin only)
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [title, description, location, event_date, total_seats]
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               category:
+ *                 type: string
+ *                 enum: [concert, conference, festival, sports]
+ *               location:
+ *                 type: string
+ *               event_date:
+ *                 type: string
+ *                 format: date-time
+ *               price:
+ *                 type: number
+ *               total_seats:
+ *                 type: integer
+ *               image_url:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *                 enum: [draft, published]
+ *     responses:
+ *       200:
+ *         description: Event created
+ *       403:
+ *         description: Admins only
+ */
 router.post('/', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admins only' });
@@ -144,7 +251,28 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
-// UPDATE event (admin only)
+/**
+ * @swagger
+ * /api/events/{id}:
+ *   put:
+ *     summary: Update an event (Admin only)
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Event updated
+ *       403:
+ *         description: Admins only
+ *       404:
+ *         description: Event not found
+ */
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admins only' });
@@ -162,7 +290,36 @@ router.put('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// PATCH status (admin only) - publish, cancel, archive
+/**
+ * @swagger
+ * /api/events/{id}/status:
+ *   patch:
+ *     summary: Change event status (Admin only)
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [draft, published, cancelled, archived]
+ *     responses:
+ *       200:
+ *         description: Status updated
+ *       403:
+ *         description: Admins only
+ */
 router.patch('/:id/status', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admins only' });
@@ -178,7 +335,26 @@ router.patch('/:id/status', authMiddleware, async (req, res) => {
   }
 });
 
-// DELETE event (admin only)
+/**
+ * @swagger
+ * /api/events/{id}:
+ *   delete:
+ *     summary: Delete an event (Admin only)
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Event deleted
+ *       403:
+ *         description: Admins only
+ */
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admins only' });

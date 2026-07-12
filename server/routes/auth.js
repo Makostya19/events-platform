@@ -4,6 +4,44 @@ const jwt = require('jsonwebtoken');
 const passport = require('passport');
 const pool = require('../db');
 
+/**
+ * @swagger
+ * tags:
+ *   name: Auth
+ *   description: Authentication endpoints
+ */
+
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, email, password]
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 minLength: 8
+ *     responses:
+ *       200:
+ *         description: User registered successfully
+ *       400:
+ *         description: Validation error
+ *       409:
+ *         description: Email already exists
+ */
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -27,6 +65,33 @@ router.post('/register', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Login with email and password
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login successful, returns token and user
+ *       401:
+ *         description: Invalid credentials
+ *       403:
+ *         description: Account blocked
+ */
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -53,10 +118,28 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Start Google OAuth flow
+/**
+ * @swagger
+ * /api/auth/google:
+ *   get:
+ *     summary: Start Google OAuth flow
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirects to Google login
+ */
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'], session: false }));
 
-// Google OAuth callback
+/**
+ * @swagger
+ * /api/auth/google/callback:
+ *   get:
+ *     summary: Google OAuth callback
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirects to frontend with token
+ */
 router.get('/google/callback',
   passport.authenticate('google', { session: false, failureRedirect: `${process.env.CLIENT_URL}/login?error=google_failed` }),
   (req, res) => {
