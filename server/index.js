@@ -25,6 +25,22 @@ app.use('/api/admin/users', require('./routes/users'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/profile', require('./routes/profile'));
 
+app.get('/api/stats', async (req, res) => {
+  try {
+    const pool = require('./db');
+    const [ticketsRes, citiesRes] = await Promise.all([
+      pool.query("SELECT COALESCE(SUM(quantity), 0) as total FROM tickets WHERE status = 'confirmed'"),
+      pool.query("SELECT COUNT(DISTINCT location) as total FROM events WHERE status = 'published'"),
+    ]);
+    res.json({
+      tickets: parseInt(ticketsRes.rows[0].total),
+      cities: parseInt(citiesRes.rows[0].total),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/', (req, res) => res.send('Events Platform API'));
 
 app.use((err, req, res, next) => {
