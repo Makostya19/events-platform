@@ -18,6 +18,7 @@ app.get('/api/docs.json', (req, res) => res.json(swaggerSpec));
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/events', require('./routes/events'));
+app.use('/api', require('./routes/ticket-types'));
 app.use('/api/tickets', require('./routes/tickets'));
 app.use('/api/favorites', require('./routes/favorites'));
 app.use('/api/reviews', require('./routes/reviews'));

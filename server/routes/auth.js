@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
 const pool = require('../db');
+const authMiddleware = require('../middleware/auth');
 
 /**
  * @swagger
@@ -113,6 +114,43 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET);
     res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, status: user.status } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Get the currently authenticated user
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user data (without password hash)
+ *       401:
+ *         description: Invalid or missing token
+ *       404:
+ *         description: User no longer exists
+ *       403:
+ *         description: Account blocked
+ */
+router.get('/me', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, name, email, role, status, provider, created_at FROM users WHERE id = $1',
+      [req.user.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'User not found' });
+
+    const user = result.rows[0];
+    if (user.status === 'blocked') {
+      return res.status(403).json({ error: 'Your account has been blocked. Contact support.' });
+    }
+
+    res.json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

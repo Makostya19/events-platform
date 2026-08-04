@@ -1,5 +1,13 @@
 const swaggerJsdoc = require('swagger-jsdoc');
 
+const servers = [
+  { url: 'http://localhost:5000', description: 'Local' },
+];
+
+if (process.env.BACKEND_URL) {
+  servers.unshift({ url: process.env.BACKEND_URL, description: 'Production' });
+}
+
 const options = {
   definition: {
     openapi: '3.0.0',
@@ -8,10 +16,7 @@ const options = {
       version: '1.0.0',
       description: 'API documentation for Events ticket booking platform',
     },
-    servers: [
-      { url: 'https://events-platform-production-1d72.up.railway.app', description: 'Production' },
-      { url: 'http://localhost:5000', description: 'Local' },
-    ],
+    servers,
     components: {
       securitySchemes: {
         bearerAuth: {

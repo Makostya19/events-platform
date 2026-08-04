@@ -1,17 +1,24 @@
 const router = require('express').Router();
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
+const { validateQuery } = require('../middleware/validate');
 
 const adminOnly = (req, res, next) => {
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admins only' });
   next();
 };
 
-router.get('/', authMiddleware, adminOnly, async (req, res) => {
+const usersQuerySchema = {
+  page: { type: 'positiveInt', default: 1 },
+  limit: { type: 'positiveInt', default: 20 },
+  search: { type: 'string', maxLength: 200 },
+};
+
+router.get('/', authMiddleware, adminOnly, validateQuery(usersQuerySchema), async (req, res) => {
   try {
-    const { page = 1, limit = 20, search } = req.query;
-    const pageNum = Math.max(1, parseInt(page));
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+    const { page, limit, search } = req.validatedQuery;
+    const pageNum = page;
+    const limitNum = Math.min(100, limit);
     const offset = (pageNum - 1) * limitNum;
 
     const params = [];
@@ -41,6 +48,10 @@ router.patch('/:id/status', authMiddleware, adminOnly, async (req, res) => {
   try {
     const { status } = req.body;
     if (!['active', 'blocked'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
+
+    if (parseInt(req.params.id) === req.user.id && status === 'blocked') {
+      return res.status(400).json({ error: 'You cannot block your own account' });
+    }
 
     const result = await pool.query(
       'UPDATE users SET status = $1 WHERE id = $2 RETURNING id, name, email, role, status',
