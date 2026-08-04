@@ -16,6 +16,8 @@ const EventDetail = () => {
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const [event, setEvent] = useState(null);
+  const [ticketTypes, setTicketTypes] = useState([]);
+  const [selectedTypeId, setSelectedTypeId] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [rating, setRating] = useState(5);
@@ -31,12 +33,29 @@ const EventDetail = () => {
 
   useEffect(() => {
     fetchEvent();
+    fetchTicketTypes();
     fetchReviews();
   }, [id]);
+
+  useEffect(() => {
+    if (user) fetchFavoriteStatus();
+    else setIsFavorite(false);
+  }, [id, user]);
 
   const fetchEvent = async () => {
     const res = await axios.get(`${API_URL}/api/events/${id}`);
     setEvent(res.data);
+  };
+
+  const fetchTicketTypes = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/events/${id}/ticket-types`);
+      const active = res.data.filter(t => t.is_active);
+      setTicketTypes(active);
+      if (active.length) setSelectedTypeId(active[0].id);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const fetchReviews = async () => {
@@ -44,14 +63,28 @@ const EventDetail = () => {
     setReviews(res.data);
   };
 
+  const fetchFavoriteStatus = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/favorites/my`, { headers: { Authorization: `Bearer ${token}` } });
+      setIsFavorite(res.data.some(e => String(e.id) === String(id)));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleBuyTicket = async () => {
     if (!user) return navigate('/login');
+    if (!selectedTypeId) {
+      setMessage('Please select a ticket type');
+      return;
+    }
     setBookingLoading(true);
     try {
-      await axios.post(`${API_URL}/api/tickets`, { event_id: id, quantity },
+      await axios.post(`${API_URL}/api/tickets`, { ticket_type_id: selectedTypeId, quantity },
         { headers: { Authorization: `Bearer ${token}` } });
       setMessage('Ticket booked successfully!');
       fetchEvent();
+      fetchTicketTypes();
     } catch (err) {
       setMessage(err.response?.data?.error || 'Error booking ticket');
     } finally {
@@ -132,6 +165,17 @@ const EventDetail = () => {
   const cat = categoryStyle[event.category] || categoryStyle.concert;
   const avgRating = reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
   const userReview = reviews.find(r => r.user_id === user?.id);
+  const selectedType = ticketTypes.find(t => t.id === selectedTypeId);
+  const priceLabel = ticketTypes.length
+    ? (() => {
+        const prices = ticketTypes.map(t => parseFloat(t.price));
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+        if (min === 0 && max === 0) return 'Free';
+        if (min === max) return `$${min}`;
+        return `$${min} – $${max}`;
+      })()
+    : null;
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px' }}>
@@ -161,7 +205,9 @@ const EventDetail = () => {
             </p>
           )}
           <h1 style={{ fontSize: '2.1rem', fontWeight: '800', margin: '0 0 8px', color: '#1a1a2e' }}>{event.title}</h1>
-          <p style={{ color: '#666' }}>📍 {event.location} &nbsp;|&nbsp; 📅 {new Date(event.event_date).toLocaleDateString()}</p>
+          <p style={{ color: '#666' }}>
+            📍 {event.venue}{event.city ? `, ${event.city}` : ''} &nbsp;|&nbsp; 📅 {new Date(event.starts_at).toLocaleDateString()}
+          </p>
         </div>
         <button
           onClick={handleFavorite}
@@ -191,29 +237,70 @@ const EventDetail = () => {
       <div style={{ background: '#16161a', borderRadius: '14px', padding: '28px', marginBottom: '32px', border: '1px solid #2a2a30' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <p style={{ fontSize: '2.2rem', fontWeight: '800', color: cat.color, margin: 0 }}>{event.price === '0.00' ? 'Free' : `$${event.price}`}</p>
-            <p style={{ color: '#9a9aa5', margin: '4px 0 0' }}>{event.available_seats} seats available</p>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <input type="number" min="1" max={event.available_seats} value={quantity}
-              onChange={e => setQuantity(e.target.value)}
-              disabled={bookingLoading}
-              style={{ width: '70px', padding: '10px', borderRadius: '8px', border: '1.5px solid #3a3a42', background: '#0e0e10', color: 'white', fontSize: '1rem', textAlign: 'center' }}
-            />
-            <button
-              onClick={handleBuyTicket}
-              disabled={bookingLoading}
-              style={{
-                background: cat.color, color: '#0e0e10', border: 'none',
-                padding: '13px 28px', borderRadius: '8px', fontWeight: '800',
-                fontSize: '1rem', cursor: bookingLoading ? 'not-allowed' : 'pointer',
-                opacity: bookingLoading ? 0.7 : 1,
-              }}
-            >
-              {bookingLoading ? 'Booking...' : 'Book Ticket'}
-            </button>
+            {priceLabel && <p style={{ fontSize: '2.2rem', fontWeight: '800', color: cat.color, margin: 0 }}>{priceLabel}</p>}
+            <p style={{ color: '#9a9aa5', margin: '4px 0 0' }}>
+              {selectedType ? `${selectedType.available_quantity} seats available for this type` : `${event.seats_left ?? 0} seats available`}
+            </p>
           </div>
         </div>
+
+        {ticketTypes.length === 0 ? (
+          <p style={{ color: '#9a9aa5' }}>No tickets are currently available for this event.</p>
+        ) : (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+              {ticketTypes.map(t => (
+                <label
+                  key={t.id}
+                  style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '14px 16px', borderRadius: '10px', cursor: 'pointer',
+                    border: `2px solid ${selectedTypeId === t.id ? cat.color : '#2a2a30'}`,
+                    background: selectedTypeId === t.id ? `${cat.color}11` : 'transparent',
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input
+                      type="radio"
+                      name="ticketType"
+                      checked={selectedTypeId === t.id}
+                      onChange={() => setSelectedTypeId(t.id)}
+                    />
+                    <span>
+                      <span style={{ color: 'white', fontWeight: '700', display: 'block' }}>{t.name}</span>
+                      <span style={{ color: '#9a9aa5', fontSize: '0.85rem' }}>
+                        {t.available_quantity > 0 ? `${t.available_quantity} left` : 'Sold out'}
+                      </span>
+                    </span>
+                  </span>
+                  <span style={{ color: cat.color, fontWeight: '800' }}>
+                    {parseFloat(t.price) === 0 ? 'Free' : `$${t.price}`}
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <input type="number" min="1" max={selectedType?.available_quantity || 1} value={quantity}
+                onChange={e => setQuantity(e.target.value)}
+                disabled={bookingLoading}
+                style={{ width: '70px', padding: '10px', borderRadius: '8px', border: '1.5px solid #3a3a42', background: '#0e0e10', color: 'white', fontSize: '1rem', textAlign: 'center' }}
+              />
+              <button
+                onClick={handleBuyTicket}
+                disabled={bookingLoading || !selectedType || selectedType.available_quantity < 1}
+                style={{
+                  background: cat.color, color: '#0e0e10', border: 'none',
+                  padding: '13px 28px', borderRadius: '8px', fontWeight: '800',
+                  fontSize: '1rem', cursor: (bookingLoading || !selectedType || selectedType.available_quantity < 1) ? 'not-allowed' : 'pointer',
+                  opacity: (bookingLoading || !selectedType || selectedType.available_quantity < 1) ? 0.7 : 1,
+                }}
+              >
+                {bookingLoading ? 'Booking...' : 'Book Ticket'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       <div style={{ marginBottom: '32px' }}>

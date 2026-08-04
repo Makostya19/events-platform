@@ -44,3 +44,24 @@
     flex-wrap: wrap;
   }
 }
+.events-filters-mobile-toggle {
+  display: none;
+}
+
+.events-filters-panel {
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .events-filters-mobile-toggle {
+    display: block;
+  }
+
+  .events-filters-panel {
+    display: none;
+  }
+
+  .events-filters-panel.open {
+    display: block;
+  }
+}

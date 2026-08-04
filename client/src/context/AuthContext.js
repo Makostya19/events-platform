@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
+import { API_URL } from '../config';
 
 const AuthContext = createContext();
 
@@ -8,13 +10,30 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    const savedToken = localStorage.getItem('token');
-    if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
-      setToken(savedToken);
-    }
-    setLoading(false);
+    const restoreSession = async () => {
+      const savedToken = localStorage.getItem('token');
+      if (!savedToken) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await axios.get(`${API_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${savedToken}` }
+        });
+        setUser(res.data);
+        setToken(savedToken);
+        localStorage.setItem('user', JSON.stringify(res.data));
+      } catch (err) {
+        // Токен невалиден, пользователь заблокирован, или удалён — сбрасываем сессию
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    restoreSession();
   }, []);
 
   const login = (token, user) => {
