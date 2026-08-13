@@ -3,12 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config';
+import { MusicIcon, BriefcaseIcon, FestivalIcon, SportsIcon, MapPinIcon, CalendarIcon, StarIcon, HeartIcon, SeatIcon } from '../components/Icons';
+import './EventDetail.css';
 
-const categoryStyle = {
-  concert: { emoji: '🎵', color: '#a970ff', label: 'Concert' },
-  conference: { emoji: '💼', color: '#3ba9ff', label: 'Conference' },
-  festival: { emoji: '🎪', color: '#ff5fa2', label: 'Festival' },
-  sports: { emoji: '⚽', color: '#3bd671', label: 'Sports' },
+const categoryMeta = {
+  concert: { icon: MusicIcon, label: 'Concert' },
+  conference: { icon: BriefcaseIcon, label: 'Conference' },
+  festival: { icon: FestivalIcon, label: 'Festival' },
+  sports: { icon: SportsIcon, label: 'Sports' },
 };
 
 const EventDetail = () => {
@@ -24,6 +26,7 @@ const EventDetail = () => {
   const [comment, setComment] = useState('');
   const [isFavorite, setIsFavorite] = useState(false);
   const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState('success');
   const [editingReview, setEditingReview] = useState(null);
   const [editRating, setEditRating] = useState(5);
   const [editComment, setEditComment] = useState('');
@@ -72,21 +75,26 @@ const EventDetail = () => {
     }
   };
 
+  const showMessage = (text, type = 'success') => {
+    setMessage(text);
+    setMessageType(type);
+  };
+
   const handleBuyTicket = async () => {
     if (!user) return navigate('/login');
     if (!selectedTypeId) {
-      setMessage('Please select a ticket type');
+      showMessage('Please select a ticket type', 'error');
       return;
     }
     setBookingLoading(true);
     try {
       await axios.post(`${API_URL}/api/tickets`, { ticket_type_id: selectedTypeId, quantity },
         { headers: { Authorization: `Bearer ${token}` } });
-      setMessage('Ticket booked successfully!');
+      showMessage('Ticket booked successfully!', 'success');
       fetchEvent();
       fetchTicketTypes();
     } catch (err) {
-      setMessage(err.response?.data?.error || 'Error booking ticket');
+      showMessage(err.response?.data?.error || 'Error booking ticket', 'error');
     } finally {
       setBookingLoading(false);
     }
@@ -119,7 +127,7 @@ const EventDetail = () => {
       setComment('');
       fetchReviews();
     } catch (err) {
-      setMessage(err.response?.data?.error || 'Error submitting review');
+      showMessage(err.response?.data?.error || 'Error submitting review', 'error');
     } finally {
       setReviewLoading(false);
     }
@@ -142,7 +150,7 @@ const EventDetail = () => {
       setEditingReview(null);
       fetchReviews();
     } catch (err) {
-      setMessage(err.response?.data?.error || 'Error updating review');
+      showMessage(err.response?.data?.error || 'Error updating review', 'error');
     } finally {
       setReviewLoading(false);
     }
@@ -156,13 +164,14 @@ const EventDetail = () => {
       );
       fetchReviews();
     } catch (err) {
-      setMessage(err.response?.data?.error || 'Error deleting review');
+      showMessage(err.response?.data?.error || 'Error deleting review', 'error');
     }
   };
 
   if (!event) return <p style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Loading...</p>;
 
-  const cat = categoryStyle[event.category] || categoryStyle.concert;
+  const meta = categoryMeta[event.category] || categoryMeta.concert;
+  const CatIcon = meta.icon;
   const avgRating = reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
   const userReview = reviews.find(r => r.user_id === user?.id);
   const selectedType = ticketTypes.find(t => t.id === selectedTypeId);
@@ -178,88 +187,71 @@ const EventDetail = () => {
     : null;
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px' }}>
-      <div style={{
-        borderRadius: '16px', height: '280px', position: 'relative',
-        background: event.image_url ? `url(${event.image_url}) center/cover` : `radial-gradient(circle at 30% 30%, ${cat.color}55, #0e0e10 70%)`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: '5rem', marginBottom: '32px', border: `1px solid ${cat.color}55`,
-      }}>
-        {!event.image_url && cat.emoji}
-        <span style={{
-          position: 'absolute', top: '16px', left: '16px',
-          background: cat.color, color: '#0e0e10',
-          padding: '5px 14px', borderRadius: '20px',
-          fontSize: '0.75rem', fontWeight: '800', letterSpacing: '0.03em',
-          textTransform: 'uppercase',
-        }}>
-          {cat.label}
-        </span>
+    <div className="event-detail">
+      <div className={`event-hero event-hero--${event.category || 'concert'}`}>
+        {event.image_url ? (
+          <img src={event.image_url} alt="" className="event-hero-image" />
+        ) : (
+          <CatIcon width={56} height={56} />
+        )}
+        <span className="event-hero-badge"><CatIcon width={13} height={13} /> {meta.label}</span>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="event-header">
         <div>
           {avgRating && (
-            <p style={{ color: '#f5a623', fontWeight: '700', marginBottom: '6px' }}>
-              {'⭐'.repeat(Math.round(avgRating))} {avgRating} ({reviews.length} review{reviews.length > 1 ? 's' : ''})
+            <p className="event-rating">
+              <StarIcon filled width={16} height={16} /> {avgRating} ({reviews.length} review{reviews.length > 1 ? 's' : ''})
             </p>
           )}
-          <h1 style={{ fontSize: '2.1rem', fontWeight: '800', margin: '0 0 8px', color: '#1a1a2e' }}>{event.title}</h1>
-          <p style={{ color: '#666' }}>
-            📍 {event.venue}{event.city ? `, ${event.city}` : ''} &nbsp;|&nbsp; 📅 {new Date(event.starts_at).toLocaleDateString()}
+          <h1 className="event-title">{event.title}</h1>
+          <p className="event-meta-line">
+            <MapPinIcon width={15} height={15} /> {event.venue}{event.city ? `, ${event.city}` : ''}
+            <span className="event-meta-sep">|</span>
+            <CalendarIcon width={15} height={15} /> {new Date(event.starts_at).toLocaleDateString()}
           </p>
         </div>
         <button
           onClick={handleFavorite}
           disabled={favoriteLoading}
-          style={{
-            background: isFavorite ? `${cat.color}22` : 'white',
-            border: `2px solid ${cat.color}`, borderRadius: '10px',
-            padding: '12px 18px', cursor: favoriteLoading ? 'not-allowed' : 'pointer',
-            fontSize: '1.3rem', transition: 'transform 0.15s',
-            opacity: favoriteLoading ? 0.7 : 1,
-          }}
-          onMouseDown={e => e.currentTarget.style.transform = 'scale(0.92)'}
-          onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+          aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          aria-pressed={isFavorite}
+          className={isFavorite ? 'fav-button-large fav-button-large--active' : 'fav-button-large'}
         >
-          {isFavorite ? '❤️' : '🤍'}
+          <HeartIcon filled={isFavorite} width={20} height={20} />
         </button>
       </div>
 
-      <p style={{ color: '#444', lineHeight: '1.7', marginBottom: '32px', fontSize: '1.02rem' }}>{event.description}</p>
+      <p className="event-description">{event.description}</p>
 
       {message && (
-        <div style={{ background: `${cat.color}1a`, color: cat.color, padding: '14px 16px', borderRadius: '10px', marginBottom: '20px', fontWeight: '700', border: `1px solid ${cat.color}44` }}>
+        <div role="status" className={`event-status-message event-status-message--${messageType}`}>
           {message}
         </div>
       )}
 
-      <div style={{ background: '#16161a', borderRadius: '14px', padding: '28px', marginBottom: '32px', border: '1px solid #2a2a30' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="booking-panel">
+        <div className="booking-panel-top">
           <div>
-            {priceLabel && <p style={{ fontSize: '2.2rem', fontWeight: '800', color: cat.color, margin: 0 }}>{priceLabel}</p>}
-            <p style={{ color: '#9a9aa5', margin: '4px 0 0' }}>
+            {priceLabel && <p className="booking-price">{priceLabel}</p>}
+            <p className="booking-availability">
               {selectedType ? `${selectedType.available_quantity} seats available for this type` : `${event.seats_left ?? 0} seats available`}
             </p>
           </div>
         </div>
 
         {ticketTypes.length === 0 ? (
-          <p style={{ color: '#9a9aa5' }}>No tickets are currently available for this event.</p>
+          <p className="booking-empty">No tickets are currently available for this event.</p>
         ) : (
           <>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+            <fieldset className="ticket-type-list">
+              <legend className="ticket-type-legend">Select ticket type</legend>
               {ticketTypes.map(t => (
                 <label
                   key={t.id}
-                  style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '14px 16px', borderRadius: '10px', cursor: 'pointer',
-                    border: `2px solid ${selectedTypeId === t.id ? cat.color : '#2a2a30'}`,
-                    background: selectedTypeId === t.id ? `${cat.color}11` : 'transparent',
-                  }}
+                  className={selectedTypeId === t.id ? 'ticket-type-option ticket-type-option--selected' : 'ticket-type-option'}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span className="ticket-type-left">
                     <input
                       type="radio"
                       name="ticketType"
@@ -267,121 +259,106 @@ const EventDetail = () => {
                       onChange={() => setSelectedTypeId(t.id)}
                     />
                     <span>
-                      <span style={{ color: 'white', fontWeight: '700', display: 'block' }}>{t.name}</span>
-                      <span style={{ color: '#9a9aa5', fontSize: '0.85rem' }}>
+                      <span className="ticket-type-name">{t.name}</span>
+                      <span className="ticket-type-remaining">
                         {t.available_quantity > 0 ? `${t.available_quantity} left` : 'Sold out'}
                       </span>
                     </span>
                   </span>
-                  <span style={{ color: cat.color, fontWeight: '800' }}>
+                  <span className="ticket-type-price">
                     {parseFloat(t.price) === 0 ? 'Free' : `$${t.price}`}
                   </span>
                 </label>
               ))}
-            </div>
+            </fieldset>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <input type="number" min="1" max={selectedType?.available_quantity || 1} value={quantity}
+            <div className="booking-actions">
+              <label htmlFor="ticket-quantity" className="ticket-type-legend">Quantity</label>
+              <input
+                id="ticket-quantity"
+                name="quantity"
+                type="number" min="1" max={selectedType?.available_quantity || 1} value={quantity}
                 onChange={e => setQuantity(e.target.value)}
                 disabled={bookingLoading}
-                style={{ width: '70px', padding: '10px', borderRadius: '8px', border: '1.5px solid #3a3a42', background: '#0e0e10', color: 'white', fontSize: '1rem', textAlign: 'center' }}
+                className="quantity-input"
               />
               <button
                 onClick={handleBuyTicket}
                 disabled={bookingLoading || !selectedType || selectedType.available_quantity < 1}
-                style={{
-                  background: cat.color, color: '#0e0e10', border: 'none',
-                  padding: '13px 28px', borderRadius: '8px', fontWeight: '800',
-                  fontSize: '1rem', cursor: (bookingLoading || !selectedType || selectedType.available_quantity < 1) ? 'not-allowed' : 'pointer',
-                  opacity: (bookingLoading || !selectedType || selectedType.available_quantity < 1) ? 0.7 : 1,
-                }}
+                className="btn-book"
               >
-                {bookingLoading ? 'Booking...' : 'Book Ticket'}
+                {bookingLoading ? 'Booking...' : 'Book ticket'}
               </button>
             </div>
           </>
         )}
       </div>
 
-      <div style={{ marginBottom: '32px' }}>
-        <h2 style={{ fontSize: '1.4rem', fontWeight: '700', marginBottom: '20px', color: '#1a1a2e' }}>Reviews ({reviews.length})</h2>
+      <div className="reviews-section">
+        <h2 className="reviews-heading">Reviews ({reviews.length})</h2>
 
         {user && !userReview && (
-          <form onSubmit={handleReview} style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', marginBottom: '20px' }}>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ fontWeight: '600', color: '#333' }}>Rating: </label>
-              <select value={rating} onChange={e => setRating(e.target.value)} style={{ marginLeft: '8px', padding: '6px', borderRadius: '6px', border: '1.5px solid #ddd' }}>
+          <form onSubmit={handleReview} className="review-form">
+            <div className="review-form-rating">
+              <label htmlFor="review-rating">Rating: </label>
+              <select id="review-rating" name="rating" value={rating} onChange={e => setRating(e.target.value)}>
                 {[5,4,3,2,1].map(n => <option key={n} value={n}>{n} ⭐</option>)}
               </select>
             </div>
-            <textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="Write your review..."
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '1rem', minHeight: '80px', boxSizing: 'border-box', resize: 'vertical' }}
+            <label htmlFor="review-comment" className="ticket-type-legend">Your review</label>
+            <textarea
+              id="review-comment"
+              name="comment"
+              value={comment} onChange={e => setComment(e.target.value)} placeholder="Write your review..."
+              className="review-textarea"
             />
-            <button
-              type="submit"
-              disabled={reviewLoading}
-              style={{
-                marginTop: '12px', background: cat.color, color: '#0e0e10',
-                border: 'none', padding: '10px 24px', borderRadius: '8px',
-                fontWeight: '800', cursor: reviewLoading ? 'not-allowed' : 'pointer',
-                opacity: reviewLoading ? 0.7 : 1,
-              }}
-            >
-              {reviewLoading ? 'Submitting...' : 'Submit Review'}
+            <button type="submit" disabled={reviewLoading} className="btn-submit-review">
+              {reviewLoading ? 'Submitting...' : 'Submit review'}
             </button>
           </form>
         )}
 
         {reviews.map(r => (
-          <div key={r.id} style={{ background: 'white', borderRadius: '12px', padding: '16px 20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', marginBottom: '12px' }}>
+          <div key={r.id} className="review-card">
             {editingReview === r.id ? (
               <form onSubmit={handleUpdateReview}>
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={{ fontWeight: '600', color: '#333' }}>Rating: </label>
-                  <select value={editRating} onChange={e => setEditRating(e.target.value)} style={{ marginLeft: '8px', padding: '6px', borderRadius: '6px', border: '1.5px solid #ddd' }}>
+                <div className="review-form-rating">
+                  <label htmlFor="edit-review-rating">Rating: </label>
+                  <select id="edit-review-rating" name="rating" value={editRating} onChange={e => setEditRating(e.target.value)}>
                     {[5,4,3,2,1].map(n => <option key={n} value={n}>{n} ⭐</option>)}
                   </select>
                 </div>
-                <textarea value={editComment} onChange={e => setEditComment(e.target.value)}
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '1rem', minHeight: '80px', boxSizing: 'border-box', resize: 'vertical', marginBottom: '10px' }}
+                <label htmlFor="edit-review-comment" className="ticket-type-legend">Edit your review</label>
+                <textarea
+                  id="edit-review-comment"
+                  name="comment"
+                  value={editComment} onChange={e => setEditComment(e.target.value)}
+                  className="review-textarea"
                 />
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    type="submit"
-                    disabled={reviewLoading}
-                    style={{
-                      background: cat.color, color: '#0e0e10', border: 'none',
-                      padding: '8px 20px', borderRadius: '8px', fontWeight: '700',
-                      cursor: reviewLoading ? 'not-allowed' : 'pointer',
-                      opacity: reviewLoading ? 0.7 : 1,
-                    }}
-                  >
+                <div className="review-edit-actions">
+                  <button type="submit" disabled={reviewLoading} className="btn-mini-save">
                     {reviewLoading ? 'Saving...' : 'Save'}
                   </button>
-                  <button type="button" onClick={() => setEditingReview(null)} style={{ background: '#eee', border: 'none', padding: '8px 20px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>
+                  <button type="button" onClick={() => setEditingReview(null)} className="btn-mini-cancel">
                     Cancel
                   </button>
                 </div>
               </form>
             ) : (
               <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
-                  <span style={{ fontWeight: '700', color: '#1a1a2e' }}>{r.name}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span>{'⭐'.repeat(r.rating)}</span>
+                <div className="review-card-top">
+                  <span className="review-author">{r.name}</span>
+                  <div className="review-actions">
+                    <span className="review-stars"><StarIcon filled width={14} height={14} /> {r.rating}</span>
                     {user && r.user_id === user.id && (
                       <>
-                        <button onClick={() => handleEditReview(r)} style={{ background: '#eef2ff', color: '#3b5bdb', border: 'none', borderRadius: '6px', padding: '4px 12px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem' }}>
-                          Edit
-                        </button>
-                        <button onClick={() => handleDeleteReview(r.id)} style={{ background: '#fff0f0', color: '#e03131', border: 'none', borderRadius: '6px', padding: '4px 12px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem' }}>
-                          Delete
-                        </button>
+                        <button onClick={() => handleEditReview(r)} className="btn-mini-edit">Edit</button>
+                        <button onClick={() => handleDeleteReview(r.id)} className="btn-mini-delete">Delete</button>
                       </>
                     )}
                   </div>
                 </div>
-                <p style={{ color: '#555', margin: 0 }}>{r.comment}</p>
+                <p className="review-comment">{r.comment}</p>
               </>
             )}
           </div>

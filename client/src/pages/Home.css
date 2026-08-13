@@ -1,51 +1,51 @@
 .hero {
-  background: linear-gradient(135deg, #0e0e10 0%, #1f1f23 50%, #2d1b69 100%);
-  min-height: 520px;
+  background: linear-gradient(160deg, #0e0e10 0%, #17171b 55%, #221a3a 100%);
+  min-height: 460px;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 60px 20px;
+  padding: 64px 20px;
 }
 
 .hero-content {
-  max-width: 700px;
+  max-width: 620px;
 }
 
-.hero-icon {
-  font-size: 4rem;
-  margin-bottom: 20px;
+.hero-mark {
+  color: var(--color-accent);
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--space-6);
 }
 
 .hero-content h1 {
-  font-size: 3rem;
-  font-weight: 800;
+  font-size: 2.75rem;
   color: white;
-  margin-bottom: 16px;
-  line-height: 1.2;
+  margin-bottom: var(--space-4);
 }
 
 .hero-content p {
-  font-size: 1.2rem;
-  color: rgba(255,255,255,0.65);
-  margin-bottom: 36px;
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: var(--space-8);
 }
 
 .hero-buttons {
   display: flex;
-  gap: 16px;
+  gap: var(--space-4);
   justify-content: center;
   flex-wrap: wrap;
 }
 
 .btn-primary {
-  background: #a970ff;
+  background: var(--color-accent);
   color: white;
-  padding: 14px 32px;
-  border-radius: 8px;
-  text-decoration: none;
+  padding: 13px 28px;
+  border-radius: var(--radius-sm);
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.95rem;
   transition: background 0.2s;
 }
 
@@ -56,26 +56,24 @@
 .btn-secondary {
   background: transparent;
   color: white;
-  padding: 14px 32px;
-  border-radius: 8px;
-  text-decoration: none;
+  padding: 13px 28px;
+  border-radius: var(--radius-sm);
   font-weight: 700;
-  font-size: 1rem;
-  border: 2px solid #a970ff;
+  font-size: 0.95rem;
+  border: 1.5px solid var(--color-accent);
   transition: all 0.2s;
 }
 
 .btn-secondary:hover {
-  background: #a970ff;
-  color: white;
+  background: var(--color-accent);
 }
 
 .stats-bar {
-  background: #a970ff;
+  background: var(--color-accent);
   display: flex;
   justify-content: center;
   gap: 80px;
-  padding: 40px 20px;
+  padding: var(--space-8) 20px;
   flex-wrap: wrap;
 }
 
@@ -87,60 +85,61 @@
 }
 
 .stat-number {
-  font-size: 2.5rem;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 700;
 }
 
 .stat-label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   opacity: 0.85;
-  margin-top: 4px;
+  margin-top: var(--space-1);
 }
 
 .categories {
-  padding: 60px 40px;
+  padding: var(--space-12) 40px;
   max-width: 1100px;
   margin: 0 auto;
 }
 
 .categories h2 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin-bottom: 24px;
-  color: #1a1a2e;
+  font-size: 1.5rem;
+  margin-bottom: var(--space-6);
+  color: var(--color-ink);
 }
 
 .category-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  gap: var(--space-4);
 }
 
 .category-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 32px 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-  text-decoration: none;
-  color: #1a1a2e;
+  gap: var(--space-3);
+  padding: 28px 20px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-ink);
   font-weight: 600;
-  font-size: 1rem;
-  transition: transform 0.2s, box-shadow 0.2s;
-  border: 2px solid transparent;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  border: 1.5px solid transparent;
 }
 
 .category-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(169,112,255,0.2);
-  border-color: #a970ff;
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-accent);
 }
 
 .category-icon {
-  font-size: 2.5rem;
+  color: var(--color-accent);
+  display: flex;
 }
 
 @media (max-width: 768px) {
@@ -161,7 +160,7 @@
   }
 
   .categories {
-    padding: 40px 20px;
+    padding: var(--space-8) 20px;
   }
 }
 
@@ -171,12 +170,11 @@
   }
 
   .category-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: var(--space-3);
   }
 
   .category-card {
     padding: 20px 12px;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 }

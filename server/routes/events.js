@@ -64,7 +64,6 @@ const ALLOWED_STATUSES = ['draft', 'published', 'cancelled', 'completed'];
  *         name: minPrice
  *         schema:
  *           type: number
- *         description: Filters by ticket type price (lowest active ticket type price)
  *       - in: query
  *         name: maxPrice
  *         schema:
@@ -141,8 +140,6 @@ router.get('/', validateQuery(eventsQuerySchema), async (req, res) => {
       params.push(dateTo);
       conditions.push(`e.starts_at <= $${params.length}`);
     }
-    // Цена теперь живёт в ticket_types, поэтому фильтр min/max цены проверяет,
-    // есть ли у события хотя бы один активный тип билета в нужном диапазоне.
     if (minPrice !== undefined) {
       params.push(minPrice);
       conditions.push(`EXISTS (SELECT 1 FROM ticket_types tt WHERE tt.event_id = e.id AND tt.is_active = true AND tt.price >= $${params.length})`);
@@ -197,6 +194,74 @@ router.get('/', validateQuery(eventsQuerySchema), async (req, res) => {
 
 /**
  * @swagger
+ * /api/events/meta/cities:
+ *   get:
+ *     summary: Get distinct list of cities with published events (for filter dropdown)
+ *     tags: [Events]
+ *     responses:
+ *       200:
+ *         description: List of distinct city names
+ */
+router.get('/meta/cities', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT DISTINCT city FROM events WHERE status = 'published' AND city IS NOT NULL AND city != '' ORDER BY city ASC`
+    );
+    res.json(result.rows.map(r => r.city));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/events/meta/dashboard:
+ *   get:
+ *     summary: Get dashboard summary (Admin only) - upcoming events and low inventory
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dashboard summary
+ *       403:
+ *         description: Admins only
+ */
+router.get('/meta/dashboard', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admins only' });
+
+    const upcomingRes = await pool.query(`
+      SELECT id, title, starts_at, city, status
+      FROM events
+      WHERE status = 'published' AND starts_at > now()
+      ORDER BY starts_at ASC
+      LIMIT 5
+    `);
+
+    const lowInventoryRes = await pool.query(`
+      SELECT e.id, e.title, tt.name as ticket_type_name, tt.available_quantity, tt.total_quantity
+      FROM ticket_types tt
+      JOIN events e ON tt.event_id = e.id
+      WHERE tt.is_active = true
+        AND e.status = 'published'
+        AND tt.available_quantity > 0
+        AND tt.available_quantity::float / NULLIF(tt.total_quantity, 0) <= 0.1
+      ORDER BY tt.available_quantity ASC
+      LIMIT 5
+    `);
+
+    res.json({
+      upcomingEvents: upcomingRes.rows,
+      lowInventory: lowInventoryRes.rows,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * @swagger
  * /api/events/{id}:
  *   get:
  *     summary: Get a single event by ID
@@ -229,27 +294,6 @@ router.get('/:id', async (req, res) => {
     `, [req.params.id]);
     if (!result.rows.length) return res.status(404).json({ error: 'Event not found' });
     res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-/**
- * @swagger
- * /api/events/cities:
- *   get:
- *     summary: Get distinct list of cities with published events (for filter dropdown)
- *     tags: [Events]
- *     responses:
- *       200:
- *         description: List of distinct city names
- */
-router.get('/meta/cities', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT DISTINCT city FROM events WHERE status = 'published' AND city IS NOT NULL AND city != '' ORDER BY city ASC`
-    );
-    res.json(result.rows.map(r => r.city));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -19,6 +19,31 @@
   text-decoration: none;
 }
 
+.navbar-brand:focus-visible,
+.navbar-links a:focus-visible,
+.btn-logout:focus-visible,
+.btn-register:focus-visible,
+.navbar-toggle:focus-visible {
+  outline: 2px solid #a970ff;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.navbar-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: #efeff1;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.navbar-toggle:hover {
+  background: rgba(255,255,255,0.08);
+}
+
 .navbar-links {
   display: flex;
   align-items: center;
@@ -69,14 +94,35 @@
     padding: 12px 20px;
     height: auto;
     gap: 12px;
-  }
-
-  .navbar-links {
-    gap: 12px;
-    font-size: 0.9rem;
+    position: relative;
   }
 
   .navbar-brand {
     font-size: 1.1rem;
+  }
+
+  .navbar-toggle {
+    display: block;
+  }
+
+  .navbar-links {
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 4px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .navbar-links.open {
+    display: flex;
+  }
+
+  .navbar-links a,
+  .navbar-links .btn-logout,
+  .navbar-links .btn-register {
+    width: 100%;
+    padding: 10px 4px;
   }
 }

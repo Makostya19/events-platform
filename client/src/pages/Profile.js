@@ -65,12 +65,12 @@ const Profile = () => {
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 20px' }}>
       <h1 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '32px', color: '#1a1a2e' }}>My Profile</h1>
 
-      {message && <div style={{ background: '#f0e6ff', color: '#a970ff', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontWeight: '600' }}>{message}</div>}
-      {error && <div style={{ background: '#fff0f0', color: '#e03131', padding: '12px', borderRadius: '8px', marginBottom: '20px' }}>{error}</div>}
+      {message && <div role="status" style={{ background: '#f0e6ff', color: '#a970ff', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontWeight: '600' }}>{message}</div>}
+      {error && <div role="alert" style={{ background: '#fff0f0', color: '#e03131', padding: '12px', borderRadius: '8px', marginBottom: '20px' }}>{error}</div>}
 
       <div style={{ background: 'white', borderRadius: '12px', padding: '28px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
-          <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#a970ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1.5rem', fontWeight: '700' }}>
+          <div aria-hidden="true" style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#a970ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1.5rem', fontWeight: '700' }}>
             {user.name?.charAt(0).toUpperCase()}
           </div>
           <div>
@@ -84,10 +84,28 @@ const Profile = () => {
 
         <h2 style={{ fontWeight: '700', marginBottom: '16px', color: '#1a1a2e', fontSize: '1.1rem' }}>Update Profile</h2>
         <form onSubmit={handleUpdateProfile}>
-          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Name</label>
-          <input style={inputStyle} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
-          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Email</label>
-          <input style={inputStyle} type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required />
+          <label htmlFor="profile-name" style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Name</label>
+          <input
+            id="profile-name"
+            name="name"
+            type="text"
+            autoComplete="name"
+            style={inputStyle}
+            value={form.name}
+            onChange={e => setForm({ ...form, name: e.target.value })}
+            required
+          />
+          <label htmlFor="profile-email" style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Email</label>
+          <input
+            id="profile-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            style={inputStyle}
+            value={form.email}
+            onChange={e => setForm({ ...form, email: e.target.value })}
+            required
+          />
           <button type="submit" disabled={loading} style={{ padding: '10px 24px', background: '#a970ff', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>
             {loading ? 'Saving...' : 'Save Changes'}
           </button>
@@ -98,12 +116,39 @@ const Profile = () => {
         <div style={{ background: 'white', borderRadius: '12px', padding: '28px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', marginBottom: '24px' }}>
           <h2 style={{ fontWeight: '700', marginBottom: '16px', color: '#1a1a2e', fontSize: '1.1rem' }}>Change Password</h2>
           <form onSubmit={handleChangePassword}>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Current Password</label>
-            <input style={inputStyle} type="password" value={passwordForm.currentPassword} onChange={e => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })} required />
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>New Password</label>
-            <input style={inputStyle} type="password" value={passwordForm.newPassword} onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} required />
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Confirm New Password</label>
-            <input style={inputStyle} type="password" value={passwordForm.confirmPassword} onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })} required />
+            <label htmlFor="profile-current-password" style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Current Password</label>
+            <input
+              id="profile-current-password"
+              name="current-password"
+              type="password"
+              autoComplete="current-password"
+              style={inputStyle}
+              value={passwordForm.currentPassword}
+              onChange={e => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+              required
+            />
+            <label htmlFor="profile-new-password" style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>New Password</label>
+            <input
+              id="profile-new-password"
+              name="new-password"
+              type="password"
+              autoComplete="new-password"
+              style={inputStyle}
+              value={passwordForm.newPassword}
+              onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+              required
+            />
+            <label htmlFor="profile-confirm-password" style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Confirm New Password</label>
+            <input
+              id="profile-confirm-password"
+              name="confirm-password"
+              type="password"
+              autoComplete="new-password"
+              style={inputStyle}
+              value={passwordForm.confirmPassword}
+              onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+              required
+            />
             <button type="submit" disabled={loading} style={{ padding: '10px 24px', background: '#1a1a2e', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>
               {loading ? 'Changing...' : 'Change Password'}
             </button>

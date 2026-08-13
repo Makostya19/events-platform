@@ -10,11 +10,19 @@ const { validateQuery } = require('../middleware/validate');
  *   description: Ticket booking management
  */
 
-const bookingsQuerySchema = {
+const myBookingsQuerySchema = {
   page: { type: 'positiveInt', default: 1 },
   limit: { type: 'positiveInt', default: 20 },
   status: { type: 'enum', values: ['confirmed', 'cancelled'] },
   sort: { type: 'enum', values: ['created_desc', 'created_asc', 'event_date_asc', 'event_date_desc'], default: 'created_desc' },
+};
+
+const adminBookingsQuerySchema = {
+  page: { type: 'positiveInt', default: 1 },
+  limit: { type: 'positiveInt', default: 20 },
+  status: { type: 'enum', values: ['confirmed', 'cancelled'] },
+  sort: { type: 'enum', values: ['created_desc', 'created_asc', 'event_date_asc', 'event_date_desc'], default: 'created_desc' },
+  search: { type: 'string', maxLength: 200 },
 };
 
 /**
@@ -146,7 +154,7 @@ router.post('/', authMiddleware, async (req, res) => {
  *       400:
  *         description: Validation error
  */
-router.get('/my', authMiddleware, validateQuery(bookingsQuerySchema), async (req, res) => {
+router.get('/my', authMiddleware, validateQuery(myBookingsQuerySchema), async (req, res) => {
   try {
     const { page, limit, status, sort } = req.validatedQuery;
     const pageNum = page;
@@ -279,6 +287,11 @@ router.patch('/:id/cancel', authMiddleware, async (req, res) => {
  *         schema:
  *           type: string
  *           enum: [created_desc, created_asc, event_date_asc, event_date_desc]
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Searches by user name, user email, or event title
  *     responses:
  *       200:
  *         description: List of all bookings
@@ -287,27 +300,35 @@ router.patch('/:id/cancel', authMiddleware, async (req, res) => {
  *       403:
  *         description: Admins only
  */
-router.get('/admin/all', authMiddleware, validateQuery(bookingsQuerySchema), async (req, res) => {
+router.get('/admin/all', authMiddleware, validateQuery(adminBookingsQuerySchema), async (req, res) => {
   try {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admins only' });
-    const { page, limit, status, sort } = req.validatedQuery;
+    const { page, limit, status, sort, search } = req.validatedQuery;
     const pageNum = page;
     const limitNum = Math.min(100, limit);
     const offset = (pageNum - 1) * limitNum;
 
     const params = [];
-    let statusClause = '';
+    const conditions = [];
     if (status) {
       params.push(status);
-      statusClause = `WHERE t.status = $${params.length}`;
+      conditions.push(`t.status = $${params.length}`);
     }
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`(u.name ILIKE $${params.length} OR u.email ILIKE $${params.length} OR e.title ILIKE $${params.length})`);
+    }
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     let orderBy = 't.created_at DESC';
     if (sort === 'created_asc') orderBy = 't.created_at ASC';
     else if (sort === 'event_date_asc') orderBy = 'e.starts_at ASC';
     else if (sort === 'event_date_desc') orderBy = 'e.starts_at DESC';
 
-    const countResult = await pool.query(`SELECT COUNT(*) FROM tickets t ${statusClause}`, params);
+    const countResult = await pool.query(
+      `SELECT COUNT(*) FROM tickets t JOIN events e ON t.event_id = e.id JOIN users u ON t.user_id = u.id ${whereClause}`,
+      params
+    );
     const total = parseInt(countResult.rows[0].count);
 
     params.push(limitNum, offset);
@@ -317,7 +338,7 @@ router.get('/admin/all', authMiddleware, validateQuery(bookingsQuerySchema), asy
        JOIN events e ON t.event_id = e.id
        JOIN users u ON t.user_id = u.id
        LEFT JOIN ticket_types tt ON t.ticket_type_id = tt.id
-       ${statusClause}
+       ${whereClause}
        ORDER BY ${orderBy}
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params

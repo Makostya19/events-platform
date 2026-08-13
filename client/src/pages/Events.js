@@ -3,13 +3,14 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config';
+import { MusicIcon, BriefcaseIcon, FestivalIcon, SportsIcon, MapPinIcon, CalendarIcon, StarIcon, HeartIcon, SearchIcon, SeatIcon } from '../components/Icons';
 import './Events.css';
 
-const categoryStyle = {
-  concert: { emoji: '🎵', color: '#a970ff', label: 'Concert' },
-  conference: { emoji: '💼', color: '#3ba9ff', label: 'Conference' },
-  festival: { emoji: '🎪', color: '#ff5fa2', label: 'Festival' },
-  sports: { emoji: '⚽', color: '#3bd671', label: 'Sports' },
+const categoryMeta = {
+  concert: { icon: MusicIcon, label: 'Concert' },
+  conference: { icon: BriefcaseIcon, label: 'Conference' },
+  festival: { icon: FestivalIcon, label: 'Festival' },
+  sports: { icon: SportsIcon, label: 'Sports' },
 };
 
 const priceLabelFor = (event) => {
@@ -20,6 +21,18 @@ const priceLabelFor = (event) => {
   if (min === null) return `From Free`;
   if (min === max) return `$${min}`;
   return `$${min} – $${max}`;
+};
+
+const DateBlock = ({ iso }) => {
+  const d = new Date(iso);
+  const day = d.getDate();
+  const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+  return (
+    <div className="event-date-block" aria-hidden="true">
+      <span className="event-date-day">{day}</span>
+      <span className="event-date-month">{month}</span>
+    </div>
+  );
 };
 
 const Events = () => {
@@ -52,7 +65,6 @@ const Events = () => {
     if (user && token) fetchFavorites();
   }, [category, city, sort, minPrice, maxPrice, dateFrom, dateTo, page]);
 
-  // Синхронизация всех фильтров с URL, чтобы можно было поделиться ссылкой
   useEffect(() => {
     const params = {};
     if (search) params.search = search;
@@ -153,42 +165,35 @@ const Events = () => {
   const filterFields = (
     <>
       <div className="events-filters">
-        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '12px', flex: 1, minWidth: '240px' }}>
+        <form onSubmit={handleSearch} className="events-search-form">
+          <label htmlFor="events-search" className="visually-hidden">Search events</label>
+          <SearchIcon className="events-search-icon" />
           <input
+            id="events-search"
+            name="search"
             type="text"
-            placeholder="Search events..."
+            placeholder="Search by name, venue, city..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ flex: 1, padding: '10px 16px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '1rem' }}
+            className="events-search-input"
           />
-          <button type="submit" style={{ padding: '10px 24px', background: '#a970ff', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>
-            Search
-          </button>
+          <button type="submit" className="btn-filled">Search</button>
         </form>
-        <select
-          value={category}
-          onChange={e => { setCategory(e.target.value); setPage(1); }}
-          style={{ padding: '10px 16px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '1rem' }}
-        >
-          <option value="">All Categories</option>
+        <label htmlFor="events-category" className="visually-hidden">Category</label>
+        <select id="events-category" name="category" value={category} onChange={e => { setCategory(e.target.value); setPage(1); }} className="events-select">
+          <option value="">All categories</option>
           <option value="concert">Concerts</option>
           <option value="conference">Conferences</option>
           <option value="festival">Festivals</option>
           <option value="sports">Sports</option>
         </select>
-        <select
-          value={city}
-          onChange={e => { setCity(e.target.value); setPage(1); }}
-          style={{ padding: '10px 16px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '1rem' }}
-        >
-          <option value="">All Cities</option>
+        <label htmlFor="events-city" className="visually-hidden">City</label>
+        <select id="events-city" name="city" value={city} onChange={e => { setCity(e.target.value); setPage(1); }} className="events-select">
+          <option value="">All cities</option>
           {cities.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
-        <select
-          value={sort}
-          onChange={e => { setSort(e.target.value); setPage(1); }}
-          style={{ padding: '10px 16px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '1rem' }}
-        >
+        <label htmlFor="events-sort" className="visually-hidden">Sort by</label>
+        <select id="events-sort" name="sort" value={sort} onChange={e => { setSort(e.target.value); setPage(1); }} className="events-select">
           <option value="newest">Newest</option>
           <option value="date_asc">Date: Soonest</option>
           <option value="price_asc">Price: Low to High</option>
@@ -198,167 +203,97 @@ const Events = () => {
       </div>
 
       <div className="events-price-filters">
-        <input
-          type="number"
-          placeholder="Min price"
-          value={minPrice}
-          onChange={e => setMinPrice(e.target.value)}
-          style={{ width: '120px', padding: '8px 12px', borderRadius: '8px', border: '1.5px solid #ddd' }}
-        />
-        <input
-          type="number"
-          placeholder="Max price"
-          value={maxPrice}
-          onChange={e => setMaxPrice(e.target.value)}
-          style={{ width: '120px', padding: '8px 12px', borderRadius: '8px', border: '1.5px solid #ddd' }}
-        />
-        <input
-          type="date"
-          value={dateFrom}
-          onChange={e => setDateFrom(e.target.value)}
-          style={{ padding: '8px 12px', borderRadius: '8px', border: '1.5px solid #ddd' }}
-        />
-        <input
-          type="date"
-          value={dateTo}
-          onChange={e => setDateTo(e.target.value)}
-          style={{ padding: '8px 12px', borderRadius: '8px', border: '1.5px solid #ddd' }}
-        />
-        <button onClick={() => { setPage(1); fetchEvents(1); }} style={{ padding: '8px 18px', background: '#eee', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
-          Apply Filters
-        </button>
+        <label htmlFor="events-min-price" className="visually-hidden">Minimum price</label>
+        <input id="events-min-price" name="minPrice" type="number" placeholder="Min price" value={minPrice} onChange={e => setMinPrice(e.target.value)} className="events-small-input" />
+        <label htmlFor="events-max-price" className="visually-hidden">Maximum price</label>
+        <input id="events-max-price" name="maxPrice" type="number" placeholder="Max price" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} className="events-small-input" />
+        <label htmlFor="events-date-from" className="visually-hidden">Date from</label>
+        <input id="events-date-from" name="dateFrom" type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="events-small-input" />
+        <label htmlFor="events-date-to" className="visually-hidden">Date to</label>
+        <input id="events-date-to" name="dateTo" type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="events-small-input" />
+        <button onClick={() => { setPage(1); fetchEvents(1); }} className="btn-outline">Apply</button>
         {hasActiveFilters && (
-          <button onClick={handleResetFilters} style={{ padding: '8px 18px', background: 'transparent', color: '#e03131', border: '1.5px solid #e03131', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
-            Reset Filters
-          </button>
+          <button onClick={handleResetFilters} className="btn-text-danger">Reset filters</button>
         )}
       </div>
     </>
   );
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px' }}>
-      <h1 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '24px', color: '#1a1a2e' }}>All Events</h1>
+    <div className="events-page">
+      <h1 className="events-title">All events</h1>
 
-      {/* Мобильная collapsible-панель фильтров */}
       <div className="events-filters-mobile-toggle">
         <button
           onClick={() => setFiltersOpen(o => !o)}
-          style={{
-            width: '100%', padding: '12px 16px', background: '#f5f5f7', border: '1.5px solid #ddd',
-            borderRadius: '8px', fontWeight: '700', cursor: 'pointer', display: 'flex',
-            justifyContent: 'space-between', alignItems: 'center', marginBottom: filtersOpen ? '16px' : '0'
-          }}
+          aria-expanded={filtersOpen}
+          aria-controls="events-filters-panel"
+          className="events-filters-toggle-btn"
         >
           <span>Filters {hasActiveFilters ? '•' : ''}</span>
-          <span>{filtersOpen ? '▲' : '▼'}</span>
+          <span aria-hidden="true">{filtersOpen ? '▲' : '▼'}</span>
         </button>
       </div>
 
-      <div className={filtersOpen ? 'events-filters-panel open' : 'events-filters-panel'}>
+      <div id="events-filters-panel" className={filtersOpen ? 'events-filters-panel open' : 'events-filters-panel'}>
         {filterFields}
       </div>
 
       {loading ? (
-        <p style={{ textAlign: 'center', color: '#888' }}>Loading...</p>
+        <div className="events-grid">
+          {[...Array(6)].map((_, i) => <div key={i} className="event-card-skeleton" />)}
+        </div>
       ) : events.length === 0 ? (
-        <p style={{ textAlign: 'center', color: '#888' }}>No events found</p>
+        <div className="events-empty">
+          <p>No events match these filters.</p>
+          {hasActiveFilters && <button onClick={handleResetFilters} className="btn-outline">Clear filters</button>}
+        </div>
       ) : (
         <>
-          <p style={{ color: '#888', marginBottom: '16px', fontSize: '0.9rem' }}>{totalPages > 0 ? `Page ${page} of ${totalPages}` : ''}</p>
+          <p className="events-count">{totalPages > 0 ? `Page ${page} of ${totalPages}` : ''}</p>
           <div className="events-grid">
             {events.map(event => {
-              const cat = categoryStyle[event.category] || categoryStyle.concert;
+              const meta = categoryMeta[event.category] || categoryMeta.concert;
+              const CatIcon = meta.icon;
               const isFav = favorites.has(event.id);
               const priceLabel = priceLabelFor(event);
               return (
-                <Link to={`/events/${event.id}`} key={event.id} style={{ textDecoration: 'none' }}>
-                  <div
-                    style={{
-                      background: '#16161a',
-                      borderRadius: '14px',
-                      overflow: 'hidden',
-                      border: '1px solid #2a2a30',
-                      transition: 'transform 0.25s, box-shadow 0.25s, border-color 0.25s',
-                      cursor: 'pointer',
-                      position: 'relative',
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.transform = 'translateY(-6px)';
-                      e.currentTarget.style.boxShadow = `0 12px 32px ${cat.color}33`;
-                      e.currentTarget.style.borderColor = cat.color;
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = 'none';
-                      e.currentTarget.style.borderColor = '#2a2a30';
-                    }}
-                  >
-                    <div style={{
-                      height: '160px',
-                      position: 'relative',
-                      background: event.image_url ? `url(${event.image_url}) center/cover` : `radial-gradient(circle at 30% 30%, ${cat.color}55, #0e0e10 70%)`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '3rem',
-                    }}>
-                      {!event.image_url && cat.emoji}
-                      <span style={{
-                        position: 'absolute', top: '12px', left: '12px',
-                        background: cat.color, color: '#0e0e10',
-                        padding: '4px 10px', borderRadius: '20px',
-                        fontSize: '0.7rem', fontWeight: '800', letterSpacing: '0.03em',
-                        textTransform: 'uppercase',
-                      }}>
-                        {cat.label}
-                      </span>
-                      {priceLabel === 'Free' && (
-                        <span style={{
-                          position: 'absolute', top: '12px', right: '12px',
-                          background: '#0e0e10', color: '#3bd671',
-                          padding: '4px 10px', borderRadius: '20px',
-                          fontSize: '0.7rem', fontWeight: '800',
-                          border: '1px solid #3bd671',
-                        }}>
-                          FREE
-                        </span>
-                      )}
-                      {user && (
-                        <button
-                          onClick={e => toggleFavorite(e, event.id)}
-                          style={{
-                            position: 'absolute', bottom: '10px', right: '10px',
-                            background: isFav ? `${cat.color}33` : 'rgba(0,0,0,0.5)',
-                            border: `1.5px solid ${isFav ? cat.color : 'rgba(255,255,255,0.3)'}`,
-                            borderRadius: '50%', width: '34px', height: '34px',
-                            cursor: 'pointer', fontSize: '1rem',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}
-                        >
-                          {isFav ? '❤️' : '🤍'}
-                        </button>
-                      )}
-                    </div>
-                    <div style={{ padding: '20px' }}>
-                      <h3 style={{ margin: '0 0 8px', color: '#fff', fontWeight: '700', fontSize: '1.1rem' }}>{event.title}</h3>
-                      {parseFloat(event.avg_rating) > 0 && (
-                        <p style={{ color: '#f5a623', fontSize: '0.85rem', marginBottom: '6px' }}>
-                          ⭐ {event.avg_rating} ({event.review_count})
-                        </p>
-                      )}
-                      <p style={{ color: '#9a9aa5', fontSize: '0.88rem', marginBottom: '6px' }}>
-                        📍 {event.venue}{event.city ? `, ${event.city}` : ''}
+                <Link to={`/events/${event.id}`} key={event.id} className="event-card">
+                  <div className={`event-card-media event-card-media--${event.category || 'concert'}`}>
+                    {event.image_url ? (
+                      <img src={event.image_url} alt="" loading="lazy" className="event-card-image" />
+                    ) : (
+                      <CatIcon width={36} height={36} />
+                    )}
+                    <DateBlock iso={event.starts_at} />
+                    {priceLabel === 'Free' && <span className="badge-free">Free</span>}
+                    {user && (
+                      <button
+                        onClick={e => toggleFavorite(e, event.id)}
+                        aria-label={isFav ? `Remove ${event.title} from favorites` : `Add ${event.title} to favorites`}
+                        aria-pressed={isFav}
+                        className={isFav ? 'fav-button fav-button--active' : 'fav-button'}
+                      >
+                        <HeartIcon filled={isFav} width={16} height={16} />
+                      </button>
+                    )}
+                  </div>
+                  <div className="event-card-body">
+                    <span className="event-card-category">
+                      <CatIcon width={14} height={14} /> {meta.label}
+                    </span>
+                    <h3 className="event-card-title">{event.title}</h3>
+                    {parseFloat(event.avg_rating) > 0 && (
+                      <p className="event-card-rating">
+                        <StarIcon filled width={14} height={14} /> {event.avg_rating} ({event.review_count})
                       </p>
-                      <p style={{ color: '#9a9aa5', fontSize: '0.88rem', marginBottom: '16px' }}>
-                        📅 {new Date(event.starts_at).toLocaleDateString()}
-                      </p>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #2a2a30', paddingTop: '14px' }}>
-                        <span style={{ fontWeight: '800', color: cat.color, fontSize: '1.15rem' }}>
-                          {priceLabel || 'N/A'}
-                        </span>
-                        <span style={{ color: '#9a9aa5', fontSize: '0.8rem' }}>{event.seats_left ?? 0} seats left</span>
-                      </div>
+                    )}
+                    <p className="event-card-meta">
+                      <MapPinIcon width={14} height={14} /> {event.venue}{event.city ? `, ${event.city}` : ''}
+                    </p>
+                    <div className="event-card-footer">
+                      <span className="event-card-price">{priceLabel || 'N/A'}</span>
+                      <span className="event-card-seats"><SeatIcon width={14} height={14} /> {event.seats_left ?? 0} left</span>
                     </div>
                   </div>
                 </Link>
@@ -368,23 +303,9 @@ const Events = () => {
 
           {totalPages > 1 && (
             <div className="events-pagination">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                style={{ padding: '8px 16px', borderRadius: '8px', border: '1.5px solid #ddd', background: 'white', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.5 : 1 }}
-              >
-                ← Prev
-              </button>
-              <span style={{ padding: '8px 16px', fontWeight: '600', color: '#1a1a2e' }}>
-                Page {page} of {totalPages}
-              </span>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                style={{ padding: '8px 16px', borderRadius: '8px', border: '1.5px solid #ddd', background: 'white', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.5 : 1 }}
-              >
-                Next →
-              </button>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="btn-outline">← Prev</button>
+              <span className="events-pagination-label">Page {page} of {totalPages}</span>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="btn-outline">Next →</button>
             </div>
           )}
         </>

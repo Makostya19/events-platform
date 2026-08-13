@@ -12,7 +12,7 @@ const ConfirmModal = ({ open, title, message, confirmLabel = 'Confirm', danger =
   return (
     <div
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000,
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1200,
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
       }}
       onClick={onCancel}
@@ -45,9 +45,8 @@ const ConfirmModal = ({ open, title, message, confirmLabel = 'Confirm', danger =
   );
 };
 
-// Hook helper for managing a single confirm-modal instance with a pending action
 const useConfirm = () => {
-  const [state, setState] = useState(null); // { title, message, confirmLabel, danger, action }
+  const [state, setState] = useState(null);
 
   const confirm = (options, action) => {
     setState({ ...options, action });
@@ -93,7 +92,7 @@ const Toast = ({ message, type = 'success', onClose }) => {
 
   return (
     <div style={{
-      position: 'fixed', top: '20px', right: '20px', zIndex: 1100,
+      position: 'fixed', top: '20px', right: '20px', zIndex: 1300,
       background: c.bg, color: c.color, border: `1.5px solid ${c.border}`,
       padding: '14px 20px', borderRadius: '10px', fontWeight: '600',
       boxShadow: '0 8px 24px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', gap: '12px',
@@ -112,6 +111,45 @@ const useToast = () => {
   const closeToast = () => setToast(null);
   const toastNode = <Toast message={toast?.message} type={toast?.type} onClose={closeToast} />;
   return { showToast, toastNode };
+};
+
+// ===== REUSABLE DRAWER =====
+const Drawer = ({ open, title, onClose, children }) => {
+  return (
+    <>
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 900,
+          opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none',
+          transition: 'opacity 0.2s',
+        }}
+      />
+      <div
+        style={{
+          position: 'fixed', top: 0, right: 0, height: '100vh', width: '480px', maxWidth: '92vw',
+          background: 'white', zIndex: 901, boxShadow: '-8px 0 32px rgba(0,0,0,0.15)',
+          transform: open ? 'translateX(0)' : 'translateX(100%)',
+          transition: 'transform 0.25s ease-out',
+          display: 'flex', flexDirection: 'column',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #eee' }}>
+          <h2 style={{ fontWeight: '800', fontSize: '1.2rem', color: '#1a1a2e', margin: 0 }}>{title}</h2>
+          <button
+            onClick={onClose}
+            aria-label="Close panel"
+            style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: '#888', lineHeight: 1, padding: '4px' }}
+          >
+            ×
+          </button>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+          {children}
+        </div>
+      </div>
+    </>
+  );
 };
 
 const Admin = () => {
@@ -176,6 +214,9 @@ const SkeletonBlock = ({ width = '100%', height = '16px' }) => (
 const DashboardTab = ({ token }) => {
   const [stats, setStats] = useState(null);
   const [recentBookings, setRecentBookings] = useState(null);
+  const [upcomingEvents, setUpcomingEvents] = useState(null);
+  const [lowInventory, setLowInventory] = useState(null);
+  const [cancelledBookings, setCancelledBookings] = useState(null);
 
   useEffect(() => {
     fetchStats();
@@ -183,10 +224,12 @@ const DashboardTab = ({ token }) => {
 
   const fetchStats = async () => {
     try {
-      const [eventsRes, usersRes, bookingsRes] = await Promise.all([
+      const [eventsRes, usersRes, bookingsRes, dashboardRes, cancelledRes] = await Promise.all([
         axios.get(`${API_URL}/api/events`, { params: { limit: 1 } }),
         axios.get(`${API_URL}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` }, params: { limit: 1 } }),
         axios.get(`${API_URL}/api/tickets/admin/all`, { headers: { Authorization: `Bearer ${token}` }, params: { limit: 5 } }),
+        axios.get(`${API_URL}/api/events/meta/dashboard`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_URL}/api/tickets/admin/all`, { headers: { Authorization: `Bearer ${token}` }, params: { limit: 5, status: 'cancelled' } }),
       ]);
       setStats({
         events: eventsRes.data.total || 0,
@@ -194,6 +237,9 @@ const DashboardTab = ({ token }) => {
         bookings: bookingsRes.data.total || 0,
       });
       setRecentBookings(bookingsRes.data.items || []);
+      setUpcomingEvents(dashboardRes.data.upcomingEvents || []);
+      setLowInventory(dashboardRes.data.lowInventory || []);
+      setCancelledBookings(cancelledRes.data.items || []);
     } catch (err) {
       console.error(err);
     }
@@ -219,28 +265,80 @@ const DashboardTab = ({ token }) => {
         </div>
       </div>
 
-      <h2 style={{ fontWeight: '700', marginBottom: '16px', color: '#1a1a2e' }}>Recent Bookings</h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {recentBookings === null && (
-          <>
-            <div style={{ ...cardStyle, padding: '14px 20px' }}><SkeletonBlock height="18px" /></div>
-            <div style={{ ...cardStyle, padding: '14px 20px' }}><SkeletonBlock height="18px" /></div>
-            <div style={{ ...cardStyle, padding: '14px 20px' }}><SkeletonBlock height="18px" /></div>
-          </>
-        )}
-        {recentBookings !== null && recentBookings.length === 0 && <p style={{ color: '#888' }}>No bookings yet.</p>}
-        {recentBookings?.map(b => (
-          <div key={b.id} style={{ ...cardStyle, padding: '14px 20px', display: 'flex', justifyContent: 'space-between' }}>
-            <span>{b.user_name} booked <strong>{b.event_title}</strong></span>
-            <span style={{ color: '#888' }}>${b.total_price}</span>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '32px' }}>
+        <div style={cardStyle}>
+          <h2 style={{ fontWeight: '700', marginBottom: '14px', color: '#1a1a2e', fontSize: '1.05rem' }}>Upcoming Events</h2>
+          {upcomingEvents === null && <SkeletonBlock height="18px" />}
+          {upcomingEvents !== null && upcomingEvents.length === 0 && <p style={{ color: '#888', fontSize: '0.9rem' }}>No upcoming published events.</p>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {upcomingEvents?.map(e => (
+              <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                <span style={{ color: '#1a1a2e', fontWeight: '600' }}>{e.title}</span>
+                <span style={{ color: '#888' }}>{new Date(e.starts_at).toLocaleDateString()}{e.city ? ` · ${e.city}` : ''}</span>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+
+        <div style={cardStyle}>
+          <h2 style={{ fontWeight: '700', marginBottom: '14px', color: '#1a1a2e', fontSize: '1.05rem' }}>Low Inventory <span style={{ color: '#e8a800', fontWeight: '500', fontSize: '0.8rem' }}>(≤10% left)</span></h2>
+          {lowInventory === null && <SkeletonBlock height="18px" />}
+          {lowInventory !== null && lowInventory.length === 0 && <p style={{ color: '#888', fontSize: '0.9rem' }}>Nothing running low right now.</p>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {lowInventory?.map((t, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                <span style={{ color: '#1a1a2e', fontWeight: '600' }}>{t.title} — {t.ticket_type_name}</span>
+                <span style={{ color: '#e8a800', fontWeight: '700' }}>{t.available_quantity}/{t.total_quantity} left</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div>
+          <h2 style={{ fontWeight: '700', marginBottom: '16px', color: '#1a1a2e' }}>Recent Bookings</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {recentBookings === null && (
+              <>
+                <div style={{ ...cardStyle, padding: '14px 20px' }}><SkeletonBlock height="18px" /></div>
+                <div style={{ ...cardStyle, padding: '14px 20px' }}><SkeletonBlock height="18px" /></div>
+              </>
+            )}
+            {recentBookings !== null && recentBookings.length === 0 && <p style={{ color: '#888' }}>No bookings yet.</p>}
+            {recentBookings?.map(b => (
+              <div key={b.id} style={{ ...cardStyle, padding: '14px 20px', display: 'flex', justifyContent: 'space-between' }}>
+                <span>{b.user_name} booked <strong>{b.event_title}</strong></span>
+                <span style={{ color: '#888' }}>${b.total_price}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h2 style={{ fontWeight: '700', marginBottom: '16px', color: '#1a1a2e' }}>Recently Cancelled</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {cancelledBookings === null && (
+              <>
+                <div style={{ ...cardStyle, padding: '14px 20px' }}><SkeletonBlock height="18px" /></div>
+                <div style={{ ...cardStyle, padding: '14px 20px' }}><SkeletonBlock height="18px" /></div>
+              </>
+            )}
+            {cancelledBookings !== null && cancelledBookings.length === 0 && <p style={{ color: '#888' }}>No cancellations.</p>}
+            {cancelledBookings?.map(b => (
+              <div key={b.id} style={{ ...cardStyle, padding: '14px 20px', display: 'flex', justifyContent: 'space-between' }}>
+                <span>{b.user_name} cancelled <strong>{b.event_title}</strong></span>
+                <span style={{ color: '#e03131' }}>${b.total_price}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-// ===== TICKET TYPES MANAGER (used inside EventsTab when editing an event) =====
+// ===== TICKET TYPES MANAGER (used inside the Event editor drawer) =====
 const TicketTypesManager = ({ eventId, token, onChange }) => {
   const [ticketTypes, setTicketTypes] = useState([]);
   const [editingTypeId, setEditingTypeId] = useState(null);
@@ -390,6 +488,155 @@ const TicketTypesManager = ({ eventId, token, onChange }) => {
   );
 };
 
+// ===== EVENT EDITOR (content of the drawer) =====
+const emptyEventForm = { title: '', description: '', category: 'concert', city: '', venue: '', startsAt: '', endsAt: '', image_url: '' };
+
+const EventEditor = ({ token, editingId, setEditingId, onSaved, onClose }) => {
+  const [form, setForm] = useState(emptyEventForm);
+  const [formError, setFormError] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (editingId === 'new') {
+      setForm(emptyEventForm);
+      setFormError('');
+    } else if (editingId) {
+      fetchEvent(editingId);
+    }
+  }, [editingId]);
+
+  const fetchEvent = async (id) => {
+    try {
+      const res = await axios.get(`${API_URL}/api/events/${id}`);
+      const event = res.data;
+      setForm({
+        title: event.title,
+        description: event.description,
+        category: event.category,
+        city: event.city || '',
+        venue: event.venue || '',
+        startsAt: event.starts_at?.slice(0, 16) || '',
+        endsAt: event.ends_at?.slice(0, 16) || '',
+        image_url: event.image_url || '',
+      });
+      setFormError('');
+    } catch (err) {
+      setFormError('Could not load event');
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await axios.post(`${API_URL}/api/upload`, formData, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+      });
+      setForm(f => ({ ...f, image_url: res.data.url }));
+    } catch (err) {
+      setFormError(err.response?.data?.error || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setFormError('');
+    try {
+      if (editingId !== 'new') {
+        await axios.put(`${API_URL}/api/events/${editingId}`, form,
+          { headers: { Authorization: `Bearer ${token}` } });
+        onSaved('Event updated!');
+      } else {
+        const res = await axios.post(`${API_URL}/api/events`, form,
+          { headers: { Authorization: `Bearer ${token}` } });
+        onSaved(res.data.note || 'Event created as draft.');
+        setEditingId(res.data.id); // switch drawer to edit mode so ticket types can be added
+      }
+    } catch (err) {
+      setFormError(err.response?.data?.error || 'Error');
+    }
+  };
+
+  const inputStyle = {
+    width: '100%', padding: '10px 14px', borderRadius: '8px',
+    border: '1.5px solid #ddd', fontSize: '1rem', boxSizing: 'border-box', marginBottom: '12px'
+  };
+
+  const isNew = editingId === 'new';
+
+  return (
+    <div>
+      {formError && <div style={{ background: '#fff0f0', color: '#e03131', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontWeight: '600' }}>{formError}</div>}
+      <form onSubmit={handleSubmit}>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Title</label>
+          <input style={{...inputStyle, marginBottom: 0}} placeholder="e.g. Jazz Night" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
+        </div>
+
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Description <span style={{ color: '#999', fontWeight: '400' }}>(min 20 characters)</span></label>
+          <textarea style={{...inputStyle, minHeight: '80px', resize: 'vertical', marginBottom: 0}} placeholder="Describe the event..." value={form.description} onChange={e => setForm({...form, description: e.target.value})} required />
+        </div>
+
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Category</label>
+          <select style={{...inputStyle, marginBottom: 0}} value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
+            <option value="concert">Concert</option>
+            <option value="conference">Conference</option>
+            <option value="festival">Festival</option>
+            <option value="sports">Sports</option>
+          </select>
+        </div>
+
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Event Image</label>
+          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} style={{ marginBottom: '8px' }} />
+          {uploading && <p style={{ color: '#a970ff', fontSize: '0.85rem' }}>Uploading...</p>}
+          {form.image_url && (
+            <img src={form.image_url} alt="preview" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', marginTop: '8px' }} />
+          )}
+        </div>
+
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>City</label>
+          <input style={{...inputStyle, marginBottom: 0}} placeholder="e.g. Seoul" value={form.city} onChange={e => setForm({...form, city: e.target.value})} required />
+        </div>
+
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Venue</label>
+          <input style={{...inputStyle, marginBottom: 0}} placeholder="e.g. Blue Square" value={form.venue} onChange={e => setForm({...form, venue: e.target.value})} required />
+        </div>
+
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Starts At</label>
+          <input style={{...inputStyle, marginBottom: 0}} type="datetime-local" value={form.startsAt} onChange={e => setForm({...form, startsAt: e.target.value})} required />
+        </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Ends At</label>
+          <input style={{...inputStyle, marginBottom: 0}} type="datetime-local" value={form.endsAt} onChange={e => setForm({...form, endsAt: e.target.value})} required />
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button type="submit" style={{ flex: 1, padding: '12px', background: '#a970ff', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '1rem', cursor: 'pointer' }}>
+            {isNew ? 'Create Event' : 'Save Changes'}
+          </button>
+          <button type="button" onClick={onClose} style={{ padding: '12px 20px', background: '#eee', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>
+            Close
+          </button>
+        </div>
+      </form>
+
+      {!isNew && <TicketTypesManager eventId={editingId} token={token} onChange={onSaved} />}
+    </div>
+  );
+};
+
 // ===== EVENTS TAB =====
 const EventsTab = ({ token }) => {
   const [events, setEvents] = useState([]);
@@ -397,13 +644,7 @@ const EventsTab = ({ token }) => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({
-    title: '', description: '', category: 'concert',
-    city: '', venue: '', startsAt: '', endsAt: '', image_url: ''
-  });
-  const [formError, setFormError] = useState('');
-  const [uploading, setUploading] = useState(false);
+  const [editingId, setEditingId] = useState(null); // null = closed, 'new' = create, number = edit
   const { confirm, modal } = useConfirm();
   const { showToast, toastNode } = useToast();
 
@@ -433,65 +674,9 @@ const EventsTab = ({ token }) => {
     fetchEvents(1);
   };
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('image', file);
-      const res = await axios.post(`${API_URL}/api/upload`, formData, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
-      });
-      setForm(f => ({ ...f, image_url: res.data.url }));
-    } catch (err) {
-      setFormError(err.response?.data?.error || 'Upload failed');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const resetForm = () => {
-    setForm({ title: '', description: '', category: 'concert', city: '', venue: '', startsAt: '', endsAt: '', image_url: '' });
-    setEditingId(null);
-    setFormError('');
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setFormError('');
-    try {
-      if (editingId) {
-        await axios.put(`${API_URL}/api/events/${editingId}`, form,
-          { headers: { Authorization: `Bearer ${token}` } });
-        showToast('Event updated!');
-        resetForm();
-        fetchEvents();
-      } else {
-        const res = await axios.post(`${API_URL}/api/events`, form,
-          { headers: { Authorization: `Bearer ${token}` } });
-        showToast(res.data.note || 'Event created as draft.');
-        setEditingId(res.data.id);
-        fetchEvents();
-      }
-    } catch (err) {
-      setFormError(err.response?.data?.error || 'Error');
-    }
-  };
-
-  const handleEdit = (event) => {
-    setEditingId(event.id);
-    setFormError('');
-    setForm({
-      title: event.title,
-      description: event.description,
-      category: event.category,
-      city: event.city || '',
-      venue: event.venue || '',
-      startsAt: event.starts_at?.slice(0, 16) || '',
-      endsAt: event.ends_at?.slice(0, 16) || '',
-      image_url: event.image_url || '',
-    });
+  const handleEditorSaved = (message) => {
+    showToast(message);
+    fetchEvents();
   };
 
   const applyStatusChange = async (id, status, force) => {
@@ -532,11 +717,6 @@ const EventsTab = ({ token }) => {
     );
   };
 
-  const inputStyle = {
-    width: '100%', padding: '10px 14px', borderRadius: '8px',
-    border: '1.5px solid #ddd', fontSize: '1rem', boxSizing: 'border-box', marginBottom: '12px'
-  };
-
   const statusBadge = {
     draft: { bg: '#f1f3f5', color: '#666' },
     published: { bg: '#f0fff4', color: '#2f9e44' },
@@ -545,166 +725,119 @@ const EventsTab = ({ token }) => {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+    <div>
       {modal}
       {toastNode}
-      <div style={{ background: 'white', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
-        <h2 style={{ fontWeight: '700', marginBottom: '20px', color: '#1a1a2e' }}>{editingId ? 'Edit Event' : 'Create Event'}</h2>
-        {formError && <div style={{ background: '#fff0f0', color: '#e03131', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontWeight: '600' }}>{formError}</div>}
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Title</label>
-            <input style={{...inputStyle, marginBottom: 0}} placeholder="e.g. Jazz Night" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
-          </div>
 
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Description <span style={{ color: '#999', fontWeight: '400' }}>(min 20 characters)</span></label>
-            <textarea style={{...inputStyle, minHeight: '80px', resize: 'vertical', marginBottom: 0}} placeholder="Describe the event..." value={form.description} onChange={e => setForm({...form, description: e.target.value})} required />
-          </div>
-
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Category</label>
-            <select style={{...inputStyle, marginBottom: 0}} value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
-              <option value="concert">Concert</option>
-              <option value="conference">Conference</option>
-              <option value="festival">Festival</option>
-              <option value="sports">Sports</option>
-            </select>
-          </div>
-
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Event Image</label>
-            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} style={{ marginBottom: '8px' }} />
-            {uploading && <p style={{ color: '#a970ff', fontSize: '0.85rem' }}>Uploading...</p>}
-            {form.image_url && (
-              <img src={form.image_url} alt="preview" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', marginTop: '8px' }} />
-            )}
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>City</label>
-              <input style={{...inputStyle, marginBottom: 0}} placeholder="e.g. Seoul" value={form.city} onChange={e => setForm({...form, city: e.target.value})} required />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Venue</label>
-              <input style={{...inputStyle, marginBottom: 0}} placeholder="e.g. Blue Square" value={form.venue} onChange={e => setForm({...form, venue: e.target.value})} required />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Starts At</label>
-              <input style={{...inputStyle, marginBottom: 0}} type="datetime-local" value={form.startsAt} onChange={e => setForm({...form, startsAt: e.target.value})} required />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>Ends At</label>
-              <input style={{...inputStyle, marginBottom: 0}} type="datetime-local" value={form.endsAt} onChange={e => setForm({...form, endsAt: e.target.value})} required />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button type="submit" style={{ flex: 1, padding: '12px', background: '#a970ff', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '1rem', cursor: 'pointer' }}>
-              {editingId ? 'Update Event' : 'Create Event'}
-            </button>
-            {editingId && (
-              <button type="button" onClick={resetForm} style={{ padding: '12px 20px', background: '#eee', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>
-                Cancel
-              </button>
-            )}
-          </div>
-        </form>
-
-        {editingId && <TicketTypesManager eventId={editingId} token={token} onChange={showToast} />}
-      </div>
-
-      <div>
-        <h2 style={{ fontWeight: '700', marginBottom: '16px', color: '#1a1a2e' }}>All Events</h2>
-
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-          <input
-            type="text"
-            placeholder="Search by title or description..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ flex: 1, padding: '9px 14px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '0.9rem' }}
+      <Drawer
+        open={!!editingId}
+        title={editingId === 'new' ? 'Create Event' : 'Edit Event'}
+        onClose={() => setEditingId(null)}
+      >
+        {editingId && (
+          <EventEditor
+            token={token}
+            editingId={editingId}
+            setEditingId={setEditingId}
+            onSaved={handleEditorSaved}
+            onClose={() => setEditingId(null)}
           />
-          <button type="submit" style={{ padding: '9px 18px', background: '#a970ff', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '0.85rem' }}>
-            Search
-          </button>
-        </form>
-
-        <select
-          value={statusFilter}
-          onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-          style={{ padding: '9px 14px', borderRadius: '8px', border: '1.5px solid #ddd', marginBottom: '16px', fontSize: '0.9rem' }}
-        >
-          <option value="">All Statuses</option>
-          <option value="draft">Draft</option>
-          <option value="published">Published</option>
-          <option value="cancelled">Cancelled</option>
-          <option value="completed">Completed</option>
-        </select>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '540px', overflowY: 'auto' }}>
-          {events.length === 0 && <p style={{ color: '#888' }}>No events found.</p>}
-          {events.map(event => {
-            const sb = statusBadge[event.status] || statusBadge.draft;
-            return (
-              <div key={event.id} style={{ background: 'white', borderRadius: '10px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                  <div>
-                    <p style={{ fontWeight: '700', color: '#1a1a2e', margin: 0 }}>{event.title}</p>
-                    <p style={{ color: '#888', fontSize: '0.85rem', margin: '2px 0' }}>
-                      {event.category} · {event.city || '—'} · {event.seats_left ?? 0}/{event.capacity ?? 0} seats
-                    </p>
-                  </div>
-                  <span style={{ background: sb.bg, color: sb.color, padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700' }}>
-                    {event.status}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <button onClick={() => handleEdit(event)} style={{ background: '#eef2ff', color: '#3b5bdb', border: 'none', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem' }}>
-                    Edit
-                  </button>
-                  {event.status !== 'published' && (
-                    <button onClick={() => handleStatusChange(event.id, 'published', 'Publish', false)} style={{ background: '#f0fff4', color: '#2f9e44', border: 'none', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem' }}>
-                      Publish
-                    </button>
-                  )}
-                  {event.status === 'published' && (
-                    <button onClick={() => handleStatusChange(event.id, 'cancelled', 'Cancel event', true)} style={{ background: '#fff0f0', color: '#e03131', border: 'none', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem' }}>
-                      Cancel event
-                    </button>
-                  )}
-                  {event.status !== 'completed' && (
-                    <button onClick={() => handleStatusChange(event.id, 'completed', 'Mark completed', false)} style={{ background: '#fff9db', color: '#e8a800', border: 'none', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem' }}>
-                      Mark completed
-                    </button>
-                  )}
-                  <button onClick={() => handleDelete(event.id)} style={{ background: '#fff0f0', color: '#e03131', border: 'none', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem' }}>
-                    Delete permanently
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '20px' }}>
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-              style={{ padding: '8px 16px', borderRadius: '8px', border: '1.5px solid #ddd', background: 'white', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.5 : 1 }}>
-              ← Prev
-            </button>
-            <span style={{ padding: '8px 16px', fontWeight: '600' }}>Page {page} of {totalPages}</span>
-            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-              style={{ padding: '8px 16px', borderRadius: '8px', border: '1.5px solid #ddd', background: 'white', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.5 : 1 }}>
-              Next →
-            </button>
-          </div>
         )}
+      </Drawer>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+        <h2 style={{ fontWeight: '700', color: '#1a1a2e', margin: 0 }}>All Events</h2>
+        <button
+          onClick={() => setEditingId('new')}
+          style={{ padding: '10px 20px', background: '#a970ff', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '0.9rem' }}
+        >
+          + New Event
+        </button>
       </div>
+
+      <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+        <input
+          type="text"
+          placeholder="Search by title or description..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ flex: 1, padding: '9px 14px', borderRadius: '8px', border: '1.5px solid #ddd', fontSize: '0.9rem' }}
+        />
+        <button type="submit" style={{ padding: '9px 18px', background: '#a970ff', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '0.85rem' }}>
+          Search
+        </button>
+      </form>
+
+      <select
+        value={statusFilter}
+        onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+        style={{ padding: '9px 14px', borderRadius: '8px', border: '1.5px solid #ddd', marginBottom: '16px', fontSize: '0.9rem' }}
+      >
+        <option value="">All Statuses</option>
+        <option value="draft">Draft</option>
+        <option value="published">Published</option>
+        <option value="cancelled">Cancelled</option>
+        <option value="completed">Completed</option>
+      </select>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+        {events.length === 0 && <p style={{ color: '#888' }}>No events found.</p>}
+        {events.map(event => {
+          const sb = statusBadge[event.status] || statusBadge.draft;
+          return (
+            <div key={event.id} style={{ background: 'white', borderRadius: '10px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                <div>
+                  <p style={{ fontWeight: '700', color: '#1a1a2e', margin: 0 }}>{event.title}</p>
+                  <p style={{ color: '#888', fontSize: '0.85rem', margin: '2px 0' }}>
+                    {event.category} · {event.city || '—'} · {event.seats_left ?? 0}/{event.capacity ?? 0} seats
+                  </p>
+                </div>
+                <span style={{ background: sb.bg, color: sb.color, padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700' }}>
+                  {event.status}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button onClick={() => setEditingId(event.id)} style={{ background: '#eef2ff', color: '#3b5bdb', border: 'none', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem' }}>
+                  Edit
+                </button>
+                {event.status !== 'published' && (
+                  <button onClick={() => handleStatusChange(event.id, 'published', 'Publish', false)} style={{ background: '#f0fff4', color: '#2f9e44', border: 'none', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem' }}>
+                    Publish
+                  </button>
+                )}
+                {event.status === 'published' && (
+                  <button onClick={() => handleStatusChange(event.id, 'cancelled', 'Cancel event', true)} style={{ background: '#fff0f0', color: '#e03131', border: 'none', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem' }}>
+                    Cancel event
+                  </button>
+                )}
+                {event.status !== 'completed' && (
+                  <button onClick={() => handleStatusChange(event.id, 'completed', 'Mark completed', false)} style={{ background: '#fff9db', color: '#e8a800', border: 'none', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem' }}>
+                    Mark completed
+                  </button>
+                )}
+                <button onClick={() => handleDelete(event.id)} style={{ background: '#fff0f0', color: '#e03131', border: 'none', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem' }}>
+                  Delete permanently
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '20px' }}>
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+            style={{ padding: '8px 16px', borderRadius: '8px', border: '1.5px solid #ddd', background: 'white', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.5 : 1 }}>
+            ← Prev
+          </button>
+          <span style={{ padding: '8px 16px', fontWeight: '600' }}>Page {page} of {totalPages}</span>
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+            style={{ padding: '8px 16px', borderRadius: '8px', border: '1.5px solid #ddd', background: 'white', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.5 : 1 }}>
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -714,6 +847,7 @@ const BookingsTab = ({ token }) => {
   const [bookings, setBookings] = useState([]);
   const [statusFilter, setStatusFilter] = useState('');
   const [sort, setSort] = useState('created_desc');
+  const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -721,10 +855,11 @@ const BookingsTab = ({ token }) => {
     fetchBookings();
   }, [statusFilter, sort, page]);
 
-  const fetchBookings = async () => {
+  const fetchBookings = async (overridePage) => {
     try {
-      const params = { page, limit: 15, sort };
+      const params = { page: overridePage || page, limit: 15, sort };
       if (statusFilter) params.status = statusFilter;
+      if (search) params.search = search;
       const res = await axios.get(`${API_URL}/api/tickets/admin/all`, {
         headers: { Authorization: `Bearer ${token}` },
         params
@@ -736,6 +871,12 @@ const BookingsTab = ({ token }) => {
     }
   };
 
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setPage(1);
+    fetchBookings(1);
+  };
+
   const statusColors = {
     confirmed: { bg: '#f0fff4', color: '#2f9e44' },
     cancelled: { bg: '#fff0f0', color: '#e03131' },
@@ -744,7 +885,7 @@ const BookingsTab = ({ token }) => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
         <h2 style={{ fontWeight: '700', color: '#1a1a2e', margin: 0 }}>All Bookings</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
           <select
@@ -769,6 +910,19 @@ const BookingsTab = ({ token }) => {
           </select>
         </div>
       </div>
+
+      <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+        <input
+          type="text"
+          placeholder="Search by user name, email, or event title..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ flex: 1, padding: '10px 16px', borderRadius: '8px', border: '1.5px solid #ddd' }}
+        />
+        <button type="submit" style={{ padding: '10px 24px', background: '#a970ff', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>
+          Search
+        </button>
+      </form>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {bookings.length === 0 && <p style={{ color: '#888' }}>No bookings found.</p>}

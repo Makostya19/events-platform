@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_URL } from '../config';
+import { TicketIcon, MusicIcon, BriefcaseIcon, FestivalIcon, SportsIcon } from '../components/Icons';
 import './Home.css';
 
 const Home = () => {
@@ -33,12 +34,12 @@ const Home = () => {
     <div className="home">
       <section className="hero">
         <div className="hero-content">
-          <div className="hero-icon">🎟️</div>
-          <h1>Find & Book Amazing Events</h1>
-          <p>Discover concerts, conferences, festivals and more. Book your tickets in seconds.</p>
+          <div className="hero-mark"><TicketIcon width={40} height={40} /></div>
+          <h1>Seoul has plans for you.</h1>
+          <p>Live music, festivals, and talks worth leaving home for.</p>
           <div className="hero-buttons">
-            <Link to="/events" className="btn-primary">Browse Events</Link>
-            {!user && <Link to="/register" className="btn-secondary">Get Started</Link>}
+            <Link to="/events" className="btn-primary">Browse all events</Link>
+            {!user && <Link to="/register" className="btn-secondary">Create free account</Link>}
           </div>
         </div>
       </section>
@@ -46,23 +47,28 @@ const Home = () => {
       <section className="stats-bar">
         <div className="stat"><span className="stat-number">{stats.events}</span><span className="stat-label">Events</span></div>
         <div className="stat"><span className="stat-number">{stats.cities}</span><span className="stat-label">Cities</span></div>
-        <div className="stat"><span className="stat-number">{stats.tickets}</span><span className="stat-label">Tickets Sold</span></div>
+        <div className="stat"><span className="stat-number">{stats.tickets}</span><span className="stat-label">Tickets sold</span></div>
       </section>
 
       <section className="categories">
-        <h2>Browse by Category</h2>
+        <h2>Pick your scene</h2>
         <div className="category-grid">
-          {[
-            { name: 'Concerts', icon: '🎵', value: 'concert' },
-            { name: 'Conferences', icon: '💼', value: 'conference' },
-            { name: 'Festivals', icon: '🎪', value: 'festival' },
-            { name: 'Sports', icon: '⚽', value: 'sports' },
-          ].map(cat => (
-            <Link to={`/events?category=${cat.value}`} key={cat.value} className="category-card">
-              <span className="category-icon">{cat.icon}</span>
-              <span>{cat.name}</span>
-            </Link>
-          ))}
+          <Link to="/events?category=concert" className="category-card">
+            <span className="category-icon"><MusicIcon width={28} height={28} /></span>
+            <span>Concerts</span>
+          </Link>
+          <Link to="/events?category=conference" className="category-card">
+            <span className="category-icon"><BriefcaseIcon width={28} height={28} /></span>
+            <span>Conferences</span>
+          </Link>
+          <Link to="/events?category=festival" className="category-card">
+            <span className="category-icon"><FestivalIcon width={28} height={28} /></span>
+            <span>Festivals</span>
+          </Link>
+          <Link to="/events?category=sports" className="category-card">
+            <span className="category-icon"><SportsIcon width={28} height={28} /></span>
+            <span>Sports</span>
+          </Link>
         </div>
       </section>
     </div>
