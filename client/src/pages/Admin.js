@@ -450,7 +450,12 @@ const TicketTypesManager = ({ eventId, token, onChange }) => {
                 <button onClick={() => handleToggleActive(t)} style={{ background: t.is_active ? '#fff9db' : '#f0fff4', color: t.is_active ? '#e8a800' : '#2f9e44', border: 'none', borderRadius: '6px', padding: '5px 10px', cursor: 'pointer', fontWeight: '600', fontSize: '0.78rem' }}>
                   {t.is_active ? 'Deactivate' : 'Activate'}
                 </button>
-                <button onClick={() => handleTypeDelete(t.id)} style={{ background: '#fff0f0', color: '#e03131', border: 'none', borderRadius: '6px', padding: '5px 10px', cursor: 'pointer', fontWeight: '600', fontSize: '0.78rem' }}>
+                <button
+                  onClick={() => handleTypeDelete(t.id)}
+                  disabled={sold > 0}
+                  title={sold > 0 ? 'Cannot delete — this ticket type has existing bookings. Deactivate it instead.' : undefined}
+                  style={{ background: '#fff0f0', color: '#e03131', border: 'none', borderRadius: '6px', padding: '5px 10px', cursor: sold > 0 ? 'not-allowed' : 'pointer', fontWeight: '600', fontSize: '0.78rem', opacity: sold > 0 ? 0.5 : 1 }}
+                >
                   Delete
                 </button>
               </div>
@@ -555,7 +560,7 @@ const EventEditor = ({ token, editingId, setEditingId, onSaved, onClose }) => {
         const res = await axios.post(`${API_URL}/api/events`, form,
           { headers: { Authorization: `Bearer ${token}` } });
         onSaved(res.data.note || 'Event created as draft.');
-        setEditingId(res.data.id); // switch drawer to edit mode so ticket types can be added
+        setEditingId(res.data.id);
       }
     } catch (err) {
       setFormError(err.response?.data?.error || 'Error');
@@ -644,7 +649,7 @@ const EventsTab = ({ token }) => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [editingId, setEditingId] = useState(null); // null = closed, 'new' = create, number = edit
+  const [editingId, setEditingId] = useState(null);
   const { confirm, modal } = useConfirm();
   const { showToast, toastNode } = useToast();
 
@@ -784,6 +789,7 @@ const EventsTab = ({ token }) => {
         {events.length === 0 && <p style={{ color: '#888' }}>No events found.</p>}
         {events.map(event => {
           const sb = statusBadge[event.status] || statusBadge.draft;
+          const hasBookings = (event.capacity ?? 0) > (event.seats_left ?? 0);
           return (
             <div key={event.id} style={{ background: 'white', borderRadius: '10px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
@@ -816,7 +822,12 @@ const EventsTab = ({ token }) => {
                     Mark completed
                   </button>
                 )}
-                <button onClick={() => handleDelete(event.id)} style={{ background: '#fff0f0', color: '#e03131', border: 'none', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem' }}>
+                <button
+                  onClick={() => handleDelete(event.id)}
+                  disabled={hasBookings}
+                  title={hasBookings ? 'Cannot delete — this event has active bookings. Cancel it instead.' : undefined}
+                  style={{ background: '#fff0f0', color: '#e03131', border: 'none', borderRadius: '6px', padding: '6px 12px', cursor: hasBookings ? 'not-allowed' : 'pointer', fontWeight: '600', fontSize: '0.82rem', opacity: hasBookings ? 0.5 : 1 }}
+                >
                   Delete permanently
                 </button>
               </div>

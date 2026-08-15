@@ -3,6 +3,13 @@ const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { validateQuery } = require('../middleware/validate');
 
+/**
+ * @swagger
+ * tags:
+ *   name: AdminUsers
+ *   description: Admin-only user management
+ */
+
 const adminOnly = (req, res, next) => {
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admins only' });
   next();
@@ -14,6 +21,36 @@ const usersQuerySchema = {
   search: { type: 'string', maxLength: 200 },
 };
 
+/**
+ * @swagger
+ * /api/admin/users:
+ *   get:
+ *     summary: Get all users with pagination and search (Admin only)
+ *     tags: [AdminUsers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Searches by name or email
+ *     responses:
+ *       200:
+ *         description: List of users with pagination
+ *       400:
+ *         description: Validation error
+ *       403:
+ *         description: Admins only
+ */
 router.get('/', authMiddleware, adminOnly, validateQuery(usersQuerySchema), async (req, res) => {
   try {
     const { page, limit, search } = req.validatedQuery;
@@ -44,6 +81,40 @@ router.get('/', authMiddleware, adminOnly, validateQuery(usersQuerySchema), asyn
   }
 });
 
+/**
+ * @swagger
+ * /api/admin/users/{id}/status:
+ *   patch:
+ *     summary: Block or activate a user (Admin only)
+ *     tags: [AdminUsers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [active, blocked]
+ *     responses:
+ *       200:
+ *         description: User status updated
+ *       400:
+ *         description: Invalid status, or attempting to block your own account
+ *       403:
+ *         description: Admins only
+ *       404:
+ *         description: User not found
+ */
 router.patch('/:id/status', authMiddleware, adminOnly, async (req, res) => {
   try {
     const { status } = req.body;

@@ -3,7 +3,43 @@ const bcrypt = require('bcryptjs');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 
-// Update profile (name, email)
+/**
+ * @swagger
+ * tags:
+ *   name: Profile
+ *   description: Current user's own profile management
+ */
+
+/**
+ * @swagger
+ * /api/profile:
+ *   put:
+ *     summary: Update your name and email
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, email]
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Profile updated
+ *       400:
+ *         description: Validation error
+ *       409:
+ *         description: Email already in use
+ */
 router.put('/', authMiddleware, async (req, res) => {
   try {
     const { name, email } = req.body;
@@ -23,7 +59,33 @@ router.put('/', authMiddleware, async (req, res) => {
   }
 });
 
-// Change password
+/**
+ * @swagger
+ * /api/profile/password:
+ *   put:
+ *     summary: Change your password (not available for Google-linked accounts)
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [currentPassword, newPassword]
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 8
+ *     responses:
+ *       200:
+ *         description: Password changed
+ *       400:
+ *         description: Validation error, wrong current password, or Google-linked account
+ */
 router.put('/password', authMiddleware, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;

@@ -102,7 +102,7 @@ const Login = () => {
           </button>
         </form>
         <p style={{ textAlign: 'center', marginTop: '20px', color: '#666' }}>
-          Don't have an account? <Link to="/register" style={{ color: '#a970ff', fontWeight: '600' }}>Register</Link>
+          Don't have an account? <Link to="/register" style={{ color: '#7c3aed', fontWeight: '600' }}>Register</Link>
         </p>
       </div>
     </div>
