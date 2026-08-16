@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config';
+import { StarIcon } from '../components/Icons';
+import './Admin.css';
 
 const tabs = ['Dashboard', 'Events', 'Bookings', 'Users', 'Reviews'];
 
@@ -168,25 +170,15 @@ const Admin = () => {
   if (!user || user.role !== 'admin') return null;
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px' }}>
-      <h1 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '24px', color: '#1a1a2e' }}>Admin Panel</h1>
+    <div className="admin-page">
+      <h1 className="admin-title">Admin Panel</h1>
 
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '32px', borderBottom: '2px solid #eee', flexWrap: 'wrap' }}>
+      <div className="admin-tabs">
         {tabs.map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            style={{
-              padding: '12px 20px',
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === tab ? '3px solid #a970ff' : '3px solid transparent',
-              color: activeTab === tab ? '#a970ff' : '#666',
-              fontWeight: activeTab === tab ? '700' : '500',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              marginBottom: '-2px',
-            }}
+            className={activeTab === tab ? 'admin-tab-btn admin-tab-btn--active' : 'admin-tab-btn'}
           >
             {tab}
           </button>
@@ -267,7 +259,7 @@ const DashboardTab = ({ token }) => {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '32px' }}>
         <div style={cardStyle}>
-          <h2 style={{ fontWeight: '700', marginBottom: '14px', color: '#1a1a2e', fontSize: '1.05rem' }}>Upcoming Events</h2>
+          <h2 className="admin-section-title" style={{ marginBottom: '14px' }}>Upcoming Events</h2>
           {upcomingEvents === null && <SkeletonBlock height="18px" />}
           {upcomingEvents !== null && upcomingEvents.length === 0 && <p style={{ color: '#888', fontSize: '0.9rem' }}>No upcoming published events.</p>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -281,7 +273,7 @@ const DashboardTab = ({ token }) => {
         </div>
 
         <div style={cardStyle}>
-          <h2 style={{ fontWeight: '700', marginBottom: '14px', color: '#1a1a2e', fontSize: '1.05rem' }}>Low Inventory <span style={{ color: '#e8a800', fontWeight: '500', fontSize: '0.8rem' }}>(≤10% left)</span></h2>
+          <h2 className="admin-section-title" style={{ marginBottom: '14px' }}>Low Inventory <span style={{ color: '#e8a800', fontWeight: '500', fontSize: '0.8rem' }}>(≤10% left)</span></h2>
           {lowInventory === null && <SkeletonBlock height="18px" />}
           {lowInventory !== null && lowInventory.length === 0 && <p style={{ color: '#888', fontSize: '0.9rem' }}>Nothing running low right now.</p>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -297,7 +289,7 @@ const DashboardTab = ({ token }) => {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
         <div>
-          <h2 style={{ fontWeight: '700', marginBottom: '16px', color: '#1a1a2e' }}>Recent Bookings</h2>
+          <h2 className="admin-section-title" style={{ marginBottom: '16px' }}>Recent Bookings</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {recentBookings === null && (
               <>
@@ -316,7 +308,7 @@ const DashboardTab = ({ token }) => {
         </div>
 
         <div>
-          <h2 style={{ fontWeight: '700', marginBottom: '16px', color: '#1a1a2e' }}>Recently Cancelled</h2>
+          <h2 className="admin-section-title" style={{ marginBottom: '16px' }}>Recently Cancelled</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {cancelledBookings === null && (
               <>
@@ -422,7 +414,7 @@ const TicketTypesManager = ({ eventId, token, onChange }) => {
   return (
     <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '2px solid #eee' }}>
       {modal}
-      <h3 style={{ fontWeight: '700', marginBottom: '14px', color: '#1a1a2e', fontSize: '1.05rem' }}>Ticket Types</h3>
+      <h3 className="admin-section-title" style={{ marginBottom: '14px' }}>Ticket Types</h3>
 
       {ttError && <div style={{ background: '#fff0f0', color: '#e03131', padding: '8px 12px', borderRadius: '8px', marginBottom: '12px', fontWeight: '600', fontSize: '0.85rem' }}>{ttError}</div>}
 
@@ -751,7 +743,7 @@ const EventsTab = ({ token }) => {
       </Drawer>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-        <h2 style={{ fontWeight: '700', color: '#1a1a2e', margin: 0 }}>All Events</h2>
+        <h2 className="admin-section-title">All Events</h2>
         <button
           onClick={() => setEditingId('new')}
           style={{ padding: '10px 20px', background: '#a970ff', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '0.9rem' }}
@@ -897,7 +889,7 @@ const BookingsTab = ({ token }) => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-        <h2 style={{ fontWeight: '700', color: '#1a1a2e', margin: 0 }}>All Bookings</h2>
+        <h2 className="admin-section-title">All Bookings</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
           <select
             value={sort}
@@ -1175,7 +1167,9 @@ const ReviewsTab = ({ token }) => {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
               <span style={{ fontWeight: '700', color: '#1a1a2e' }}>{r.name}</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span>{'⭐'.repeat(r.rating)}</span>
+                <span className="admin-star-rating">
+                  <StarIcon filled width={14} height={14} /> {r.rating}
+                </span>
                 <button
                   onClick={() => handleDelete(r.id)}
                   style={{ background: '#fff0f0', color: '#e03131', border: 'none', borderRadius: '6px', padding: '4px 12px', cursor: 'pointer', fontWeight: '600', fontSize: '0.8rem' }}
