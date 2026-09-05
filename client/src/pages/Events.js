@@ -269,6 +269,7 @@ const Events = () => {
                     {priceLabel === 'Free' && <span className="badge-free">Free</span>}
                     {user && (
                       <button
+                        key={`fav-${event.id}-${isFav}`}
                         onClick={e => toggleFavorite(e, event.id)}
                         aria-label={isFav ? `Remove ${event.title} from favorites` : `Add ${event.title} to favorites`}
                         aria-pressed={isFav}

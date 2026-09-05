@@ -263,6 +263,12 @@ const EventDetail = () => {
                       <span className="ticket-type-remaining">
                         {t.available_quantity > 0 ? `${t.available_quantity} left` : 'Sold out'}
                       </span>
+                      <div className="ticket-progress-track">
+                        <div
+                          className="ticket-progress-fill"
+                          style={{ width: `${Math.max(4, (t.available_quantity / t.total_quantity) * 100)}%` }}
+                        />
+                      </div>
                     </span>
                   </span>
                   <span className="ticket-type-price">

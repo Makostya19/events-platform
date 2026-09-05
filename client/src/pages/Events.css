@@ -160,6 +160,11 @@
   gap: 22px;
 }
 
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .event-card {
   display: block;
   background: var(--color-surface);
@@ -168,7 +173,16 @@
   border: 1px solid var(--color-border);
   transition: transform 0.15s, box-shadow 0.15s;
   color: inherit;
+  animation: fadeInUp 0.4s ease-out both;
 }
+
+.events-grid .event-card:nth-child(1) { animation-delay: 0.03s; }
+.events-grid .event-card:nth-child(2) { animation-delay: 0.06s; }
+.events-grid .event-card:nth-child(3) { animation-delay: 0.09s; }
+.events-grid .event-card:nth-child(4) { animation-delay: 0.12s; }
+.events-grid .event-card:nth-child(5) { animation-delay: 0.15s; }
+.events-grid .event-card:nth-child(6) { animation-delay: 0.18s; }
+.events-grid .event-card:nth-child(n+7) { animation-delay: 0.2s; }
 
 .event-card:hover {
   transform: translateY(-3px);
@@ -252,10 +266,17 @@
   color: white;
 }
 
+@keyframes heartPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
 .fav-button--active {
   background: rgba(255,255,255,0.15);
   border-color: white;
   color: #ff6b8a;
+  animation: heartPop 0.3s ease-out;
 }
 
 .event-card-body {

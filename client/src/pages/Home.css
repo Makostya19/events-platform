@@ -8,8 +8,14 @@
   padding: 64px 20px;
 }
 
+@keyframes heroFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .hero-content {
   max-width: 620px;
+  animation: heroFadeIn 0.5s ease-out;
 }
 
 .hero-mark {
